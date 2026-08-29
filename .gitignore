@@ -43,3 +43,5 @@ coverage/
 
 # TypeScript build info
 *.tsbuildinfo
+
+material/
