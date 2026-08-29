@@ -25,3 +25,9 @@ dist-ssr
 .vercel
 .env*
 material/
+# Video renders: intermediate PNG frames and encoded output are both
+# regenerable from video/scenes/*.html + the audio in ~40s, so they stay
+# out of history. `node video/render.mjs --scene <name> --audio <file>`
+video/.frames/
+video/out/
+video/
