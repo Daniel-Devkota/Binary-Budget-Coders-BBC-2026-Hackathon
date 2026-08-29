@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { GraduationCap, Lightbulb, Plus, Trash2, CalendarPlus, Video, MapPin, Save } from 'lucide-react'
 import { useAuth } from '@/stores/authStore'
 import { useAsync } from '@/lib/useAsync'
@@ -22,8 +23,15 @@ import { errorMessage } from '@/lib/utils'
 import { SESSION_MINUTES } from '@/lib/constants'
 import type { SkillWithCategory } from '@/types/models'
 
+const TABS = ['skills', 'slots', 'about'] as const
+
 export function ProfilePage() {
   const { profile, userId, refreshProfile } = useAuth()
+  // ?tab= makes every panel linkable, so Home and the header menu can drop you
+  // straight onto the right one.
+  const [params, setParams] = useSearchParams()
+  const raw = params.get('tab')
+  const tab = TABS.includes(raw as (typeof TABS)[number]) ? raw! : 'skills'
   const skills = useAsync(fetchSkills, [])
   const mySkills = useAsync(() => (userId ? fetchUserSkills(userId) : Promise.resolve([])), [userId])
   const mySlots = useAsync(() => (userId ? fetchMySlots(userId) : Promise.resolve([])), [userId])
@@ -39,7 +47,7 @@ export function ProfilePage() {
         </p>
       </div>
 
-      <Tabs defaultValue="skills">
+      <Tabs value={tab} onValueChange={(v) => setParams({ tab: v }, { replace: true })}>
         <TabList className="flex-wrap">
           <Tab value="skills">Skills</Tab>
           <Tab value="slots">Availability</Tab>

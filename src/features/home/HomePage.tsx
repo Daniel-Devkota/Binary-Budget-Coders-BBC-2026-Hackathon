@@ -1,11 +1,13 @@
 import { Link } from 'react-router-dom'
 import {
   Sparkles, CalendarDays, Coins, ArrowRight, Search, Compass, TrendingUp, Inbox,
+  GraduationCap, Lightbulb, CalendarPlus, Check,
 } from 'lucide-react'
 import { useAuth } from '@/stores/authStore'
 import { useAsync } from '@/lib/useAsync'
 import {
-  fetchLedger, fetchMyBookings, fetchMyProposals, fetchOpenSlots, fetchPerfectSwaps,
+  fetchLedger, fetchMyBookings, fetchMyProposals, fetchMySlots, fetchOpenSlots,
+  fetchPerfectSwaps, fetchUserSkills,
 } from '@/lib/api'
 import { Card, CardBody, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
@@ -37,6 +39,8 @@ export function HomePage() {
   const proposals = useAsync(() => (userId ? fetchMyProposals(userId) : Promise.resolve([])), [userId])
   const ledger = useAsync(() => (userId ? fetchLedger(userId, 6) : Promise.resolve([])), [userId])
   const fresh = useAsync(() => fetchOpenSlots({ limit: 6 }), [])
+  const mySkills = useAsync(() => (userId ? fetchUserSkills(userId) : Promise.resolve([])), [userId])
+  const mySlots = useAsync(() => (userId ? fetchMySlots(userId) : Promise.resolve([])), [userId])
 
   const upcoming = (bookings.data ?? [])
     .filter((b) => ['confirmed', 'held'].includes(b.status))
@@ -71,6 +75,17 @@ export function HomePage() {
           </Button>
         </Link>
       </div>
+
+      {/* ─── setup: nothing can match you until these three exist ───────── */}
+      {!mySkills.loading && !mySlots.loading && (
+        <SetupCard
+          teaches={(mySkills.data ?? []).some((s) => s.kind === 'teach')}
+          learns={(mySkills.data ?? []).some((s) => s.kind === 'learn')}
+          hasSlot={(mySlots.data ?? []).some(
+            (s) => s.starts_at && new Date(s.starts_at) >= new Date() && s.status === 'open',
+          )}
+        />
+      )}
 
       {/* ─── perfect swaps: the headline ────────────────────────────────── */}
       <section className="space-y-4">
@@ -237,5 +252,89 @@ export function HomePage() {
         </div>
       </div>
     </div>
+  )
+}
+
+/**
+ * The whole platform is inert until you have taught-list + learn-list + one open hour.
+ * A new account has none of the three and no reason to open the profile page, so the
+ * prompt has to live on the first screen they land on. It disappears once all three exist.
+ */
+function SetupCard({ teaches, learns, hasSlot }: { teaches: boolean; learns: boolean; hasSlot: boolean }) {
+  const steps = [
+    {
+      done: teaches,
+      icon: GraduationCap,
+      label: 'Add something you can teach',
+      body: 'You only need to be a step ahead of the person learning.',
+      to: '/profile?tab=skills',
+      cta: 'Add a teach skill',
+    },
+    {
+      done: learns,
+      icon: Lightbulb,
+      label: 'Add something you want to learn',
+      body: 'This is the half that finds you a perfect two-way swap.',
+      to: '/profile?tab=skills',
+      cta: 'Add a learn skill',
+    },
+    {
+      done: hasSlot,
+      icon: CalendarPlus,
+      label: 'Publish an hour you are free',
+      body: 'An open hour is what makes you findable and bookable.',
+      to: '/profile?tab=slots',
+      cta: 'Publish an hour',
+    },
+  ]
+
+  const remaining = steps.filter((s) => !s.done)
+  if (remaining.length === 0) return null
+  const next = remaining[0]
+
+  return (
+    <Card className="border-amber-500 bg-amber-100/50">
+      <CardHeader className="space-y-1">
+        <CardTitle className="flex items-center gap-2">
+          <Sparkles className="size-4 text-amber-600" aria-hidden />
+          Finish setting up — {steps.length - remaining.length} of {steps.length} done
+        </CardTitle>
+        <p className="text-sm text-ink-soft">
+          Nobody can match with you until all three are in place. It takes about a minute.
+        </p>
+      </CardHeader>
+      <CardBody className="space-y-4">
+        <ol className="grid sm:grid-cols-3 gap-3">
+          {steps.map(({ done, icon: Icon, label, body, to }) => (
+            <li key={label}>
+              <Link
+                to={to}
+                className={`flex h-full gap-2.5 p-3 rounded-[12px] border-2 bg-white ${
+                  done ? 'border-moss-500/50 opacity-60' : 'border-line-strong hover:bg-paper-deep'
+                }`}
+              >
+                <span
+                  className={`grid place-items-center size-7 shrink-0 rounded-[9px] border-2 ${
+                    done ? 'bg-moss-500 border-moss-600 text-white' : 'bg-amber-300 border-amber-500 text-ink'
+                  }`}
+                  aria-hidden
+                >
+                  {done ? <Check className="size-4" /> : <Icon className="size-4" />}
+                </span>
+                <span className="space-y-0.5">
+                  <span className={`block text-sm font-semibold ${done ? 'line-through' : ''}`}>{label}</span>
+                  <span className="block text-xs text-ink-soft">{done ? 'Done.' : body}</span>
+                </span>
+              </Link>
+            </li>
+          ))}
+        </ol>
+        <Link to={next.to}>
+          <Button variant="accent">
+            {next.cta} <ArrowRight className="size-4" aria-hidden />
+          </Button>
+        </Link>
+      </CardBody>
+    </Card>
   )
 }
