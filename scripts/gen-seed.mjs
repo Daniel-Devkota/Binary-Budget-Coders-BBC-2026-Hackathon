@@ -199,9 +199,21 @@ w(`-- ==========================================================================
 w(``)
 w(`do $seed$`)
 w(`declare`)
+w(`  -- Slots are authored in the demo's local timezone so the calendar reads`)
+w(`  -- naturally on stage, then stored as UTC like everything else.`)
+w(`  v_tz  text := 'Australia/Sydney';`)
+w(`  v_day date := (now() at time zone 'Australia/Sydney')::date;`)
 w(`  v_now timestamptz := date_trunc('hour', now());`)
 w(`begin`)
 w(``)
+
+// `--reseed` regenerates over an existing database: wipe the seeded accounts
+// and catalog first. Cascades clear skills, slots, bookings, ledger and chat.
+if (process.argv.includes('--reseed')) {
+  w(`delete from auth.users where email like '%@blocks.demo';`)
+  w(`delete from public.skill_categories;`)
+  w(``)
+}
 
 // categories
 const catIds = {}
@@ -319,12 +331,16 @@ w(``)
 // ─── slots ───────────────────────────────────────────────────────────────────
 // Times are expressed relative to v_now so the demo never shows a stale calendar.
 const slots = []
-function emitSlot(u, skillSlug, offsetHours, mode) {
+/** A local wall-clock time on `v_day + days`, converted to UTC for storage. */
+const localAt = (days, hour) =>
+  `((v_day + interval '${days} days' + interval '${hour} hours') at time zone v_tz)`
+
+function emitSlot(u, skillSlug, day, hour, mode) {
   const id = uuid()
   const online = mode === 'online'
-  slots.push({ id, teacher: u.id, skill: skillSlug, offsetHours })
+  slots.push({ id, teacher: u.id, skill: skillSlug, day, hour })
   w(`insert into public.availability_slots (id, teacher_id, skill_id, starts_at, ends_at, mode, location_text, meeting_url, lat, lng, status)
-values (${q(id)}, ${q(u.id)}, ${q(skillBySlug[skillSlug].id)}, v_now + interval '${offsetHours} hours', v_now + interval '${offsetHours + 1} hours', ${q(mode)}, ${online ? 'null' : q(pick(PLACES))}, ${online ? q(pick(ONLINE_URLS)) : 'null'}, ${online ? 'null' : (u.lat).toFixed(5)}, ${online ? 'null' : (u.lng).toFixed(5)}, 'open');`)
+values (${q(id)}, ${q(u.id)}, ${q(skillBySlug[skillSlug].id)}, ${localAt(day, hour)}, ${localAt(day, hour + 1)}, ${q(mode)}, ${online ? 'null' : q(pick(PLACES))}, ${online ? q(pick(ONLINE_URLS)) : 'null'}, ${online ? 'null' : (u.lat).toFixed(5)}, ${online ? 'null' : (u.lng).toFixed(5)}, 'open');`)
   return id
 }
 
@@ -332,10 +348,14 @@ for (const u of users) {
   const n = u === maya || u === sam ? 4 : int(0, 4)
   for (let i = 0; i < n; i++) {
     const t = pick(u.teach)
-    // Daytime-ish slots spread over the next fortnight.
-    const day = int(1, 13)
-    const hour = pick([9, 10, 11, 13, 14, 15, 17, 18, 19])
-    emitSlot(u, t.slug, day * 24 + hour, chance(0.6) ? 'online' : 'in_person')
+    // Daytime-ish local slots spread over the next fortnight.
+    emitSlot(
+      u,
+      t.slug,
+      int(1, 13),
+      pick([9, 10, 11, 13, 14, 15, 17, 18, 19]),
+      chance(0.6) ? 'online' : 'in_person',
+    )
   }
 }
 w(``)
@@ -354,9 +374,9 @@ for (let i = 0; i < 40; i++) {
   const hour = int(9, 19)
   const paymentType = chance(0.45) ? 'swap' : 'token'
   w(`insert into public.availability_slots (id, teacher_id, skill_id, starts_at, ends_at, mode, location_text, meeting_url, status)
-values (${q(slotId)}, ${q(teacher.id)}, ${q(skillBySlug[t.slug].id)}, v_now - interval '${daysAgo} days' + interval '${hour} hours', v_now - interval '${daysAgo} days' + interval '${hour + 1} hours', 'online', null, ${q(pick(ONLINE_URLS))}, 'booked');`)
+values (${q(slotId)}, ${q(teacher.id)}, ${q(skillBySlug[t.slug].id)}, ${localAt(-daysAgo, hour)}, ${localAt(-daysAgo, hour + 1)}, 'online', null, ${q(pick(ONLINE_URLS))}, 'booked');`)
   w(`insert into public.bookings (id, slot_id, teacher_id, learner_id, skill_id, payment_type, status, held_at, confirmed_at, created_at)
-values (${q(bookingId)}, ${q(slotId)}, ${q(teacher.id)}, ${q(learner.id)}, ${q(skillBySlug[t.slug].id)}, ${q(paymentType)}, 'completed', v_now - interval '${daysAgo} days' + interval '${hour + 1} hours', v_now - interval '${daysAgo - 1} days', v_now - interval '${daysAgo + 4} days');`)
+values (${q(bookingId)}, ${q(slotId)}, ${q(teacher.id)}, ${q(learner.id)}, ${q(skillBySlug[t.slug].id)}, ${q(paymentType)}, 'completed', ${localAt(-daysAgo, hour + 1)}, v_now - interval '${daysAgo - 1} days', v_now - interval '${daysAgo + 4} days');`)
   if (paymentType === 'token') {
     w(`insert into public.token_ledger (user_id, delta, reason, booking_id) values (${q(learner.id)}, -1, 'booking_hold', ${q(bookingId)});`)
     w(`insert into public.token_ledger (user_id, delta, reason, booking_id) values (${q(teacher.id)}, 1, 'teach_earn', ${q(bookingId)});`)

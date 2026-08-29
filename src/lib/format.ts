@@ -8,10 +8,15 @@ export function dayLabel(iso: string) {
   return format(d, 'EEE d MMM')
 }
 
+const lower = (s: string) => s.replace('AM', 'am').replace('PM', 'pm')
+
 export function timeRange(startIso: string, endIso: string) {
   const s = new Date(startIso)
   const e = new Date(endIso)
-  return `${format(s, 'h:mm')}–${format(e, 'h:mma')}`.replace('AM', 'am').replace('PM', 'pm')
+  // Keep the meridiem on the start time when it differs, so 11:00–12:00pm
+  // cannot be read as an overnight session.
+  const startFmt = format(s, 'a') === format(e, 'a') ? 'h:mm' : 'h:mma'
+  return lower(`${format(s, startFmt)}–${format(e, 'h:mma')}`)
 }
 
 export function fullWhen(startIso: string, endIso: string) {
@@ -27,5 +32,5 @@ export function sameDay(a: string, b: string) {
 }
 
 export function clockTime(iso: string) {
-  return format(new Date(iso), 'h:mma').replace('AM', 'am').replace('PM', 'pm')
+  return lower(format(new Date(iso), 'h:mma'))
 }

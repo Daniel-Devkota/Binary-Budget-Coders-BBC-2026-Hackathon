@@ -16,6 +16,9 @@ declare
   v_now timestamptz := date_trunc('hour', now());
 begin
 
+delete from auth.users where email like '%@blocks.demo';
+delete from public.skill_categories;
+
 insert into public.skill_categories (id, name, slug, icon, sort) values ('4e36d194-eb12-48fe-8ffd-09dbc45f5f14', 'Music', 'music', 'Music2', 0);
 insert into public.skill_categories (id, name, slug, icon, sort) values ('a8f16864-4140-4359-86bb-f3aa5e912fac', 'Languages', 'languages', 'Languages', 1);
 insert into public.skill_categories (id, name, slug, icon, sort) values ('cff07305-37a3-4bd8-b7c6-b1b0d9e2e10b', 'Software', 'software', 'Code', 2);

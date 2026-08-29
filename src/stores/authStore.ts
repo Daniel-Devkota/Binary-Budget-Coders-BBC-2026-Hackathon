@@ -23,30 +23,37 @@ export const useAuth = create<AuthState>((set, get) => ({
   userId: null,
 
   init: () => {
-    const load = async (session: Session | null) => {
-      set({ session, userId: session?.user.id ?? null })
+    // supabase-js holds an internal lock while an onAuthStateChange callback
+    // runs, so any await on a supabase call from inside it deadlocks. Set the
+    // session synchronously, then do the loading on a later tick.
+    const loadProfile = async (session: Session | null) => {
       if (!session) {
         set({ profile: null, ready: true })
         return
       }
       await get().refreshProfile()
       set({ ready: true })
+
       // Weekly grant is lazy: no cron to break at 3am.
-      void supabase.rpc('claim_weekly_grant').then(({ data, error }) => {
-        if (!error && typeof data === 'number' && data !== get().profile?.token_balance) {
-          void get().refreshProfile()
-        }
-      })
+      const { data, error } = await supabase.rpc('claim_weekly_grant')
+      if (!error && typeof data === 'number' && data !== get().profile?.token_balance) {
+        await get().refreshProfile()
+      }
     }
 
-    void supabase.auth.getSession().then(({ data }) => void load(data.session))
+    const handle = (session: Session | null) => {
+      set({ session, userId: session?.user.id ?? null })
+      setTimeout(() => void loadProfile(session), 0)
+    }
+
+    void supabase.auth.getSession().then(({ data }) => handle(data.session))
 
     const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'TOKEN_REFRESHED') {
         set({ session })
         return
       }
-      void load(session)
+      handle(session)
     })
 
     return () => sub.subscription.unsubscribe()

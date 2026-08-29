@@ -67,11 +67,12 @@ export function SwapProposalCard({
       </div>
 
       <div className="flex items-stretch gap-2 flex-col sm:flex-row">
-        <Leg label={iAmResponder ? 'You teach' : 'You teach'} slot={proposal.proposer_slot} />
+        {/* proposer_slot is the proposer's hour; responder_slot is the responder's. */}
+        <Leg label={iAmResponder ? 'They teach' : 'You teach'} slot={proposal.proposer_slot} />
         <div className="grid place-items-center px-1">
           <ArrowLeftRight className="size-4 text-ink-faint sm:rotate-0 rotate-90" aria-hidden />
         </div>
-        <Leg label={iAmResponder ? 'They learn from you' : 'They teach'} slot={proposal.responder_slot} />
+        <Leg label={iAmResponder ? 'You teach' : 'They teach'} slot={proposal.responder_slot} />
       </div>
 
       {proposal.message && (
