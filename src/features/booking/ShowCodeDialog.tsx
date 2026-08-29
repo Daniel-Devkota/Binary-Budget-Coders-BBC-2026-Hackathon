@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { ShieldCheck, Loader2 } from 'lucide-react'
+import { QRCodeSVG } from 'qrcode.react'
 import { DialogRoot, DialogContent } from '@/components/ui/Dialog'
 import { revealSessionCode } from '@/lib/api'
 import { errorMessage } from '@/lib/utils'
@@ -38,6 +39,14 @@ export function ShowCodeDialog({
 
   const learnerName = booking.learner.display_name.split(' ')[0]
 
+  // FR13. Opening this on the learner's phone lands on /bookings with the
+  // confirm dialog already open and the six digits filled in — it is the same
+  // code and the same RPC, just fewer taps. SVG, so there is no canvas and
+  // nothing to rasterise.
+  const deepLink = code
+    ? `${window.location.origin}/bookings?confirm=${booking.id}&c=${code}`
+    : null
+
   return (
     <DialogRoot open={open} onOpenChange={onOpenChange}>
       <DialogContent
@@ -59,6 +68,15 @@ export function ShowCodeDialog({
               <Loader2 className="size-6 animate-spin text-ink-faint" aria-label="Loading" />
             )}
           </div>
+
+          {deepLink && (
+            <div className="flex flex-col items-center gap-2">
+              <div className="rounded-[12px] border-2 border-line-strong bg-white p-3">
+                <QRCodeSVG value={deepLink} size={148} level="M" />
+              </div>
+              <p className="text-xs text-ink-faint">Or let {learnerName} scan this.</p>
+            </div>
+          )}
 
           {code && (
             <p className="flex items-start gap-2 text-xs text-ink-soft bg-indigo-50 border-2 border-indigo-200 rounded-[12px] p-3">

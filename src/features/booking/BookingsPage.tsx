@@ -1,6 +1,6 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { CalendarDays, Repeat2, History, Inbox } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { useAuth } from '@/stores/authStore'
 import { useAsync } from '@/lib/useAsync'
 import { fetchMyBookings, fetchMyProposals } from '@/lib/api'
@@ -19,6 +19,24 @@ export function BookingsPage() {
   const proposals = useAsync(() => (userId ? fetchMyProposals(userId) : Promise.resolve([])), [userId])
 
   const reload = () => { void bookings.reload(); void proposals.reload() }
+
+  /**
+   * FR13 — /bookings?confirm=<booking>&c=<code>, which is what the teacher's QR
+   * encodes. Read once into state and stripped from the URL straight away, so a
+   * refresh does not reopen the dialog and the code does not sit in history.
+   */
+  const [params, setParams] = useSearchParams()
+  const [scan] = useState(() => ({
+    bookingId: params.get('confirm'),
+    code: params.get('c'),
+  }))
+  useEffect(() => {
+    if (!params.get('confirm') && !params.get('c')) return
+    const next = new URLSearchParams(params)
+    next.delete('confirm')
+    next.delete('c')
+    setParams(next, { replace: true })
+  }, [params, setParams])
 
   // Getting here is what clears the Sessions badge.
   useEffect(() => { markSessionsSeen() }, [])
@@ -43,7 +61,7 @@ export function BookingsPage() {
         <p className="text-ink-soft">Everything you are teaching, learning or still deciding on.</p>
       </div>
 
-      <Tabs defaultValue="upcoming">
+      <Tabs defaultValue={scan.bookingId ? 'awaiting' : 'upcoming'}>
         <TabList className="flex-wrap">
           <Tab value="upcoming">
             Upcoming {upcoming.length > 0 && <Badge tone="indigo" className="ml-1.5">{upcoming.length}</Badge>}
@@ -99,7 +117,14 @@ export function BookingsPage() {
           {loading ? (
             <CardSkeleton />
           ) : awaiting.length ? (
-            awaiting.map((b) => <BookingCard key={b.id} booking={b} onChanged={reload} />)
+            awaiting.map((b) => (
+              <BookingCard
+                key={b.id}
+                booking={b}
+                onChanged={reload}
+                scannedCode={b.id === scan.bookingId ? scan.code : null}
+              />
+            ))
           ) : (
             <EmptyState
               icon={Inbox}

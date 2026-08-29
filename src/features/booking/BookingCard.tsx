@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Video, MapPin, Clock, Repeat2, Coins, Check, X, ExternalLink, Zap, KeyRound } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
@@ -45,9 +45,15 @@ const statusLabel = {
 export function BookingCard({
   booking,
   onChanged,
+  scannedCode,
 }: {
   booking: BookingWithContext
   onChanged: () => void
+  /**
+   * FR13 — the learner arrived by scanning the teacher's QR, so the confirm
+   * dialog opens on its own with the six digits already in it.
+   */
+  scannedCode?: string | null
 }) {
   const { userId, refreshProfile } = useAuth()
   const [busy, setBusy] = useState(false)
@@ -69,6 +75,10 @@ export function BookingCard({
   // six digits aloud, so online keeps the two-step attestation.
   const inPerson = booking.slot.mode === 'in_person'
   const awaitingConfirmation = booking.status === 'confirmed' && past
+
+  useEffect(() => {
+    if (scannedCode && awaitingConfirmation && inPerson && !iAmTeacher) setConfirmOpen(true)
+  }, [scannedCode, awaitingConfirmation, inPerson, iAmTeacher])
 
   const act = async (fn: () => Promise<void>, ok: string) => {
     setBusy(true)
@@ -223,6 +233,7 @@ export function BookingCard({
           booking={booking}
           open={confirmOpen}
           onOpenChange={setConfirmOpen}
+          initialCode={scannedCode ?? undefined}
           onConfirmed={async () => {
             await refreshProfile()
             toast.success(
