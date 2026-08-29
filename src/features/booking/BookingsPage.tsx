@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { CalendarDays, Repeat2, History, Inbox } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '@/stores/authStore'
@@ -10,6 +11,7 @@ import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { BookingCard } from './BookingCard'
 import { SwapProposalCard } from './SwapProposalCard'
+import { markSessionsSeen } from './useSessionActivity'
 
 export function BookingsPage() {
   const userId = useAuth((s) => s.userId)
@@ -17,6 +19,9 @@ export function BookingsPage() {
   const proposals = useAsync(() => (userId ? fetchMyProposals(userId) : Promise.resolve([])), [userId])
 
   const reload = () => { void bookings.reload(); void proposals.reload() }
+
+  // Getting here is what clears the Sessions badge.
+  useEffect(() => { markSessionsSeen() }, [])
 
   const all = bookings.data ?? []
   const upcoming = all
