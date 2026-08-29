@@ -12,7 +12,6 @@ import { PublicProfilePage } from '@/features/profile/PublicProfilePage'
 import { ProfilePage } from '@/features/profile/ProfilePage'
 import { BookingsPage } from '@/features/booking/BookingsPage'
 import { RequestsPage } from '@/features/requests/RequestsPage'
-import { MapPlaceholder } from '@/features/home/MapPlaceholder'
 import { Logo } from '@/components/brand/Logo'
 
 const MessagesPage = lazy(() =>
@@ -20,6 +19,11 @@ const MessagesPage = lazy(() =>
 )
 const FeedPage = lazy(() =>
   import('@/features/feed/FeedPage').then((m) => ({ default: m.FeedPage })),
+)
+// MapLibre plus a tile style is the heaviest chunk in the app. It loads when
+// someone actually opens the globe, and never before.
+const MapPage = lazy(() =>
+  import('@/features/map/MapPage').then((m) => ({ default: m.MapPage })),
 )
 
 function FullPageLoader() {
@@ -65,7 +69,7 @@ export default function App() {
           <Route path="/messages/:conversationId" element={<RequireAuth><MessagesPage /></RequireAuth>} />
           <Route path="/requests" element={<RequireAuth><RequestsPage /></RequireAuth>} />
           <Route path="/feed" element={<RequireAuth><FeedPage /></RequireAuth>} />
-          <Route path="/map" element={<RequireAuth><MapPlaceholder /></RequireAuth>} />
+          <Route path="/map" element={<RequireAuth><MapPage /></RequireAuth>} />
 
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

@@ -821,6 +821,31 @@ export type Database = {
           they_want_id: string
         }[]
       }
+      slots_in_bounds: {
+        Args: {
+          p_max_lat: number
+          p_max_lng: number
+          p_min_lat: number
+          p_min_lng: number
+          p_zoom?: number
+        }
+        Returns: {
+          kind: string
+          slot_id: string | null
+          lat: number
+          lng: number
+          session_count: number
+          label: string
+          skill_id: string | null
+          skill_name: string | null
+          skill_slug: string | null
+          teacher_id: string | null
+          teacher_name: string | null
+          teacher_avatar: string | null
+          starts_at: string | null
+          ends_at: string | null
+        }[]
+      }
       propose_swap: {
         Args: {
           p_message?: string

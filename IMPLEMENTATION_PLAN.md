@@ -23,10 +23,10 @@ disconnected. We connect them directly, without money.*
 | **P0 — must ship** | Auth, profiles, skill catalog, tutor availability, search, booking (token or swap), swap matching, completion flow, token ledger | Build first |
 | **P1 — strongly wanted** | Realtime 1-1 messaging, skill requests with AI dedupe, follows | Build second |
 | **P2 — if time** | Social feed with consented photos | Build third |
-| **Parked** | Map page, group sessions, ratings/reviews, recurring slots | Route stub only |
+| **Parked** | Group sessions, ratings/reviews, recurring slots | Not built |
 
-**Parked but pre-wired:** profiles carry `city`, `country`, `lat`, `lng` from day one so the map page
-drops in later with no migration. `/map` exists as a "coming soon" placeholder so navigation is complete.
+Profiles carried `city`, `country`, `lat`, `lng` from day one, which is why the globe (§12) needed no
+migration when it was unparked — only a new RPC.
 
 ---
 
@@ -396,7 +396,7 @@ live chat silently delivers nothing.
 | `/messages` | Conversation list + realtime thread | P1 |
 | `/requests` | Open skill requests; tutors respond | P1 |
 | `/feed` | Posts from people you follow | P2 |
-| `/map` | 3D globe → zoom into city → bookable session pins (§12) | Planned |
+| `/map` | 3D globe → zoom into city → bookable session pins (§12) | Built |
 
 ### Design direction
 
@@ -639,3 +639,27 @@ Steps 1–6 are the feature. 7–9 are what make it shippable rather than demo-o
 | Jitter implemented client-side by mistake | High — leaks exact home addresses | Jitter lives in the RPC; assert in review that the client never receives a raw coordinate |
 | Judges open the map on a region with no sessions | Medium | Default camera flies to the viewer's city, not to (0,0) |
 | Scope creep — routing, directions, heatmaps | Medium | Pins and popups only. Anything else is post-hackathon |
+
+### 12.9 What shipped, and where it differs from this plan
+
+Built in `src/features/map/` (`MapPage.tsx`, `GlobeMap.tsx`, `map.css`), behind `React.lazy`, plus
+`supabase/migrations/20260829000020_map_slots_in_bounds.sql`. Steps 1–10 of §12.7 are done. Three
+decisions differ from the plan above, all deliberate:
+
+1. **Pins are React `<Marker>`s with client-side grid clustering, not a GeoJSON source with
+   MapLibre's native `cluster: true`.** Native clustering needs a symbol layer for the counts, which
+   means style glyphs and paint expressions rather than our Tailwind classes — and a canvas-drawn pin
+   is invisible to a keyboard and a screen reader. Markers are ordinary `<button>`s, so every pin is
+   tabbable and labelled. The cell size shrinks with zoom, so clusters still spider apart on the way
+   in. Server aggregation below zoom 6 keeps the count low enough for this to be cheap.
+2. **`lat`/`lng` were revoked from the client's grants entirely** and masked in `slots_public`
+   alongside `meeting_url` and `location_text`. §12.4 promised that the browser never receives a raw
+   coordinate; leaving the columns readable on the view would have made that untrue no matter what
+   the RPC did. `SLOT_COLS` in `src/lib/api.ts` no longer lists them.
+3. **No dark-mode style variant.** The app is light-only — there is no dark theme anywhere else to
+   match — so the style is recoloured once on load into the indigo/amber palette and left there.
+
+**Gotcha worth keeping:** maplibre resolves its tile worker by building a URL string at runtime, which
+no bundler can see, so the worker never lands in the build and the globe renders as an empty sphere
+with no error in the console. `GlobeMap.tsx` imports the worker with Vite's `?worker&url` and hands
+the result to `maplibreConfig.WORKER_URL`. If tiles ever vanish again, check that first.

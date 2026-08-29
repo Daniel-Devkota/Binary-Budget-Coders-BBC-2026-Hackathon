@@ -41,9 +41,7 @@ purpose, so teaching is the only real way to keep learning. That constraint is t
 | **Skill requests** | Ask for something nobody teaches yet. An Edge Function matches the request against the catalog so it reaches the right tutors; it degrades to a local heuristic when the AI service is unavailable. |
 | **Consent-gated feed** | A session post is invisible until *both* people approve it. Nobody's photo goes public unilaterally. |
 | **Follows** | Follow people whose skills interest you; their shared sessions appear in your feed. |
-
-Parked, but pre-wired: profiles and in-person slots already carry `lat`/`lng`, so the map page drops
-in later with no migration. `/map` ships as an honest "coming soon".
+| **The globe** | `/map` opens on a 3D globe, dives into your city, and resolves into individual bookable sessions. Pins are jittered ~500m inside the database — the browser is never sent a real coordinate. |
 
 ---
 
@@ -55,6 +53,7 @@ in later with no migration. `/map` ships as an honest "coming soon".
 | Styling | Tailwind CSS v4 with hand-built primitives on an 8px block grid |
 | State | Zustand for auth/session; direct Supabase calls for server data |
 | 3D | react-three-fiber + drei — landing hero only, lazy chunk, static fallback, disabled under `prefers-reduced-motion` |
+| Maps | MapLibre GL (globe projection) + react-map-gl, OpenFreeMap tiles — lazy chunk, no API key |
 | Backend | Supabase (Postgres 17, Auth, Realtime, Storage, RLS) in `ap-southeast-2` |
 | Server logic | Supabase Edge Functions (Deno) — only where a secret is involved |
 | Hosting | Vercel |
@@ -70,11 +69,14 @@ own rows, and no client ever writes a token.
   `cancel_booking`, `complete_booking` and the weekly grant are `SECURITY DEFINER` functions that
   lock the row, check the invariant, and write the ledger. A trigger keeps `profiles.token_balance`
   in sync with the ledger, which is the actual source of truth.
-- **Meeting details** — `SELECT` on `availability_slots.meeting_url` and `.location_text` is revoked
-  from `anon` and `authenticated`, so `select *` on the base table is a permission error. Clients read
-  `slots_public`, a definer view that returns those two columns only when the viewer is the teacher or
-  holds a confirmed booking. This is enforced in the database, so it holds for anyone with the
+- **Meeting details** — `SELECT` on `availability_slots.meeting_url`, `.location_text`, `.lat` and
+  `.lng` is revoked from `anon` and `authenticated`, so `select *` on the base table is a permission
+  error. Clients read `slots_public`, a definer view that returns those columns only when the viewer
+  is the teacher or holds a confirmed booking. This is enforced in the database, so it holds for anyone with the
   publishable key and curl.
+- **Map coordinates** — the globe reads `slots_in_bounds`, the only path to `lat`/`lng`, and it
+  jitters every point ~500m before returning it. The offset is derived from the slot id, so a pin
+  never wanders between refetches and cannot be averaged out over repeated requests.
 - **Realtime** — RLS applies to the replication stream, so the `messages` policy is what makes live
   chat both work and stay private.
 - **Keys** — `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` are safe in the browser and in
@@ -124,7 +126,7 @@ src/
   components/domain/   slot cards, skill pills, person rows
   components/layout/   the app shell and navigation
   features/            one directory per surface: auth, home, search, skills, profile,
-                       booking, messaging, requests, feed
+                       booking, messaging, requests, feed, map
   lib/                 supabase client, the typed query layer, formatting, helpers
   stores/              zustand auth store
 supabase/
@@ -144,6 +146,10 @@ scripts/               seed generator and live-database test scripts
 - [lucide](https://lucide.dev) — icon set (ISC)
 - [three.js](https://threejs.org), [react-three-fiber](https://r3f.docs.pmnd.rs),
   [drei](https://drei.docs.pmnd.rs) — the landing hero
+- [MapLibre GL JS](https://maplibre.org) and [react-map-gl](https://visgl.github.io/react-map-gl/) —
+  the globe (BSD-3-Clause / MIT)
+- [OpenFreeMap](https://openfreemap.org) vector tiles, © [OpenMapTiles](https://openmaptiles.org),
+  data from [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors (ODbL)
 - [zustand](https://zustand.docs.pmnd.rs), [date-fns](https://date-fns.org),
   [clsx](https://github.com/lukeed/clsx), [tailwind-merge](https://github.com/dcastil/tailwind-merge)
 - Fonts: [Bricolage Grotesque](https://fonts.google.com/specimen/Bricolage+Grotesque) and

@@ -1,15 +1,16 @@
 import { supabase } from './supabase'
 import type {
-  BookingWithContext, PerfectSwap, Profile, SkillWithCategory,
+  BookingWithContext, MapPoint, PerfectSwap, Profile, SkillWithCategory,
   SlotWithContext, SwapProposalWithContext, UserSkillWithSkill,
 } from '@/types/models'
 
 /**
- * availability_slots has SELECT revoked on meeting_url and location_text, so a
- * bare `*` is a permission error. Anything reading the base table lists columns.
+ * availability_slots has SELECT revoked on meeting_url, location_text, lat and
+ * lng, so a bare `*` is a permission error. Anything reading the base table
+ * lists columns. Coordinates come from the map RPC, jittered.
  */
 export const SLOT_COLS =
-  'id,teacher_id,skill_id,starts_at,ends_at,mode,lat,lng,status,created_at'
+  'id,teacher_id,skill_id,starts_at,ends_at,mode,status,created_at'
 
 const SKILL_SELECT = 'skill:skills(*, category:skill_categories(*))'
 
@@ -129,6 +130,31 @@ export async function createSlot(input: {
 export async function deleteSlot(id: string) {
   const { error } = await supabase.from('availability_slots').delete().eq('id', id)
   if (error) throw error
+}
+
+// ─── map ────────────────────────────────────────────────────────────────────
+/**
+ * Open in-person sessions inside a viewport. Coordinates come back jittered
+ * ~500m by the RPC — the browser is never told where anyone actually is. Below
+ * zoom 6 the rows are city aggregates instead of sessions.
+ */
+export async function fetchSlotsInBounds(bounds: {
+  minLat: number
+  minLng: number
+  maxLat: number
+  maxLng: number
+  zoom: number
+}): Promise<MapPoint[]> {
+  const rows = unwrap(
+    await supabase.rpc('slots_in_bounds', {
+      p_min_lat: bounds.minLat,
+      p_min_lng: bounds.minLng,
+      p_max_lat: bounds.maxLat,
+      p_max_lng: bounds.maxLng,
+      p_zoom: bounds.zoom,
+    }),
+  )
+  return (rows ?? []) as MapPoint[]
 }
 
 // ─── people and skills ──────────────────────────────────────────────────────

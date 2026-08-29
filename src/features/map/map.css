@@ -1,0 +1,25 @@
+/* MapLibre ships its own chrome. Strip it back to the block language: paper
+   ground, chunky borders, offset shadow. */
+.maplibregl-popup-content {
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
+  border-radius: 0;
+}
+.maplibregl-popup-tip { display: none; }
+.maplibregl-popup-close-button { display: none; }
+
+.maplibregl-ctrl-group {
+  border: 2px solid var(--color-line-strong);
+  border-radius: 12px;
+  box-shadow: 3px 3px 0 0 var(--color-line-strong);
+  overflow: hidden;
+}
+.maplibregl-ctrl-group button + button { border-top: 2px solid var(--color-line); }
+
+.maplibregl-ctrl-attrib.maplibregl-compact {
+  border-radius: 10px;
+  font-family: var(--font-sans);
+}
+
+.maplibregl-canvas:focus-visible { outline: 3px solid var(--color-indigo-400); }

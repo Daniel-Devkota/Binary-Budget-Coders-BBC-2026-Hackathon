@@ -50,3 +50,25 @@ export type PerfectSwap = {
   theyTeach: SkillWithCategory
   theyWant: SkillWithCategory
 }
+
+/**
+ * A point on the globe. The RPC returns either an individual bookable session
+ * or, below zoom 6, one pre-aggregated row per city. Coordinates are always
+ * jittered server-side — there is no raw location anywhere in this type.
+ */
+export type MapPoint = {
+  kind: 'slot' | 'cluster'
+  slot_id: string | null
+  lat: number
+  lng: number
+  session_count: number
+  label: string
+  skill_id: string | null
+  skill_name: string | null
+  skill_slug: string | null
+  teacher_id: string | null
+  teacher_name: string | null
+  teacher_avatar: string | null
+  starts_at: string | null
+  ends_at: string | null
+}

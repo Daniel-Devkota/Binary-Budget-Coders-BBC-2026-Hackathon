@@ -55,6 +55,22 @@ await step('messages visible', async () =>
 await step('posts published', async () =>
   ({ n: must(await sb.from('posts').select('id').eq('status','published')).length }))
 
+await step('map: raw coordinates are not readable', async () => {
+  const { error } = await sb.from('availability_slots').select('id, lat, lng').limit(1)
+  if (!error) throw new Error('lat/lng are still readable on the base table')
+  return { errorSeen: error.message }
+})
+
+await step('map: slots_in_bounds returns jittered pins and city clusters', async () => {
+  const box = { p_min_lat: -45, p_min_lng: 110, p_max_lat: -10, p_max_lng: 155 }
+  const pins = must(await sb.rpc('slots_in_bounds', { ...box, p_zoom: 11 }))
+  const again = must(await sb.rpc('slots_in_bounds', { ...box, p_zoom: 11 }))
+  const cities = must(await sb.rpc('slots_in_bounds', { ...box, p_zoom: 2 }))
+  const stable = pins.every((p) => again.find((q) => q.slot_id === p.slot_id)?.lat === p.lat)
+  if (!stable) throw new Error('jitter is not deterministic — pins will wander between refetches')
+  return { pins: pins.length, cities: cities.map((c) => `${c.label}:${c.session_count}`) }
+})
+
 await step('classify-request edge function', async () => {
   const skills = must(await sb.from('skills').select('id, name'))
   const { data, error } = await sb.functions.invoke('classify-request', {

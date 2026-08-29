@@ -32,7 +32,7 @@ and you have everything.
 | Consent-gated feed with block-art placeholders | Working |
 | Landing page with lazy 3D hero and reduced-motion fallback | Working |
 | Mobile layout and drawer | Working at 390px |
-| `/map` placeholder | Present, honest |
+| Globe map: dive to your city, clustered pins, popup → booking | Working, verified in dev and against the production build |
 
 ---
 
@@ -52,9 +52,10 @@ token overlap. But it is a visible AI feature for judging, and it is one command
 
 ## Things worth knowing before you touch the code
 
-1. **Never `select *` from `availability_slots`.** `SELECT` on `meeting_url` and `location_text` is
-   revoked from `anon` and `authenticated`, so a bare `*` is a permission error. Read slots through
-   `slots_public`, or list columns explicitly — `SLOT_COLS` in `src/lib/api.ts` exists for this.
+1. **Never `select *` from `availability_slots`.** `SELECT` on `meeting_url`, `location_text`, `lat`
+   and `lng` is revoked from `anon` and `authenticated`, so a bare `*` is a permission error. Read
+   slots through `slots_public`, or list columns explicitly — `SLOT_COLS` in `src/lib/api.ts` exists
+   for this. Coordinates come only from `slots_in_bounds`, which jitters them ~500m first.
 
 2. **Never `await` a Supabase call inside an `onAuthStateChange` callback.** supabase-js holds a lock
    while the callback runs and the client deadlocks — sign-in silently never resolves. `authStore.init`
@@ -73,7 +74,11 @@ token overlap. But it is a visible AI feature for judging, and it is one command
 5. **`supabase db reset --linked` does not work non-interactively** in this CLI version. Migrations
    are append-only; add a new one instead.
 
-6. **Slot times are authored in Sydney local time** in the seed and converted to UTC. Do not go back
+6. **If the globe renders as an empty sphere, suspect the tile worker.** maplibre builds its worker
+   URL at runtime, so no bundler emits the file, and it fails silently with nothing in the console.
+   `GlobeMap.tsx` imports it with `?worker&url` and sets `maplibreConfig.WORKER_URL`. Keep that line.
+
+7. **Slot times are authored in Sydney local time** in the seed and converted to UTC. Do not go back
    to bare `now() + interval` or the demo calendar reads as 1am sessions.
 
 ---
