@@ -465,6 +465,32 @@ export type Database = {
           },
         ]
       }
+      session_codes: {
+        Row: {
+          booking_id: string
+          code: string
+          revealed_at: string
+        }
+        Insert: {
+          booking_id: string
+          code: string
+          revealed_at?: string
+        }
+        Update: {
+          booking_id?: string
+          code?: string
+          revealed_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_codes_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: true
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       skill_categories: {
         Row: {
           icon: string | null
@@ -820,6 +846,10 @@ export type Database = {
       cancel_booking: { Args: { p_booking_id: string }; Returns: undefined }
       claim_weekly_grant: { Args: never; Returns: number }
       complete_booking: { Args: { p_booking_id: string }; Returns: undefined }
+      confirm_session_with_code: {
+        Args: { p_booking_id: string; p_code: string }
+        Returns: undefined
+      }
       force_complete_booking: {
         Args: { p_booking_id: string }
         Returns: undefined
@@ -858,6 +888,7 @@ export type Database = {
         Args: { p_accept: boolean; p_proposal_id: string }
         Returns: string
       }
+      reveal_session_code: { Args: { p_booking_id: string }; Returns: string }
       run_auto_confirms: { Args: never; Returns: number }
       slots_in_bounds: {
         Args: {

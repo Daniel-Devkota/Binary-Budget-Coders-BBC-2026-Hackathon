@@ -1,7 +1,9 @@
 /**
  * Bookings in states the client API cannot reach — a session that already
  * started, a held booking whose 48 hours are up. Shared by the confirmation
- * tests. Everything created here carries a marker so cleanup is total.
+ * tests. Everything created here carries a marker so cleanup is total — which
+ * also means the suites share one namespace and have to be run one at a time.
+ * Two at once and each one's cleanup deletes the other's fixtures mid-run.
  */
 import { q, q1 } from './dbq.mjs'
 
@@ -51,14 +53,22 @@ export function mkBooking({
 
 /** Deletes every booking, ledger row and slot this file ever created. */
 export function cleanup() {
-  // session_codes only exists from the Phase 2 migration onwards.
-  q(`do $$ begin
-       if to_regclass('public.session_codes') is not null then
-         delete from public.session_codes where booking_id in (
-           select b.id from public.bookings b
-             join public.availability_slots s on s.id = b.slot_id
-            where s.location_text like '${MARK}%' or s.meeting_url like '%${MARK}%');
-       end if;
+  // session_codes and its attempt counters only exist from the Phase 2
+  // migrations onwards, and the counters are sequences rather than rows.
+  q(`do $$
+     declare v_id uuid;
+     begin
+       if to_regclass('public.session_codes') is null then return; end if;
+       for v_id in
+         delete from public.session_codes c
+          where c.booking_id in (
+            select b.id from public.bookings b
+              join public.availability_slots s on s.id = b.slot_id
+             where s.location_text like '${MARK}%' or s.meeting_url like '%${MARK}%')
+         returning c.booking_id
+       loop
+         perform confirm_guard.reset(v_id);
+       end loop;
      end $$`)
   return q1(`
     with slots as (

@@ -304,6 +304,32 @@ export async function forceComplete(bookingId: string) {
   if (error) throw error
 }
 
+/**
+ * The teacher's half of an in-person confirmation. Raises if the caller is not
+ * the teacher, if the session is online, or if it is more than 15 minutes
+ * before the start — the card gates the button on the session having started,
+ * and the server window is deliberately wider. Do not move that check client
+ * side to make the two agree.
+ */
+export async function revealSessionCode(bookingId: string) {
+  const { data, error } = await supabase.rpc('reveal_session_code', { p_booking_id: bookingId })
+  if (error) throw error
+  return data as string
+}
+
+/**
+ * The learner's half: one call, straight from confirmed to completed. Every
+ * refusal — wrong caller, wrong status, online session, wrong code, locked out
+ * after five — comes back as a thrown error with a message worth showing.
+ */
+export async function confirmWithCode(bookingId: string, code: string) {
+  const { error } = await supabase.rpc('confirm_session_with_code', {
+    p_booking_id: bookingId,
+    p_code: code,
+  })
+  if (error) throw error
+}
+
 // ─── swaps ──────────────────────────────────────────────────────────────────
 export async function fetchMyProposals(userId: string) {
   return unwrap(
