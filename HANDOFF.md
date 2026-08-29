@@ -71,8 +71,8 @@ post-confirmation, and nowhere else.
   teacher, and leaving four people on `pending` forever is worse than the old no-state.
 - Accepting opens a **conversation**, not a booking. The offer carries no slot reference and the
   teacher may have published no availability.
-- The classifier runs on **Groq** (`llama-3.3-70b-versatile`). The Gemini path is gone, not kept as a
-  fallback — the client-side token-overlap heuristic is the real fallback and it works.
+- The classifier runs on **Groq** (`openai/gpt-oss-120b`; it was `llama-3.3-70b-versatile` until Groq
+  retired it). The Gemini path is gone, not kept as a fallback — the client-side token-overlap heuristic is the real fallback and it works.
 - A new skill proposed from the request dialog is `approved` immediately **when the AI answered**,
   and `pending` when only the heuristic ran. The AI answers "is this a duplicate", which is the only
   judgement needed; a token-overlap miss is not that judgement. See *Releasing a stuck skill* below.
@@ -131,22 +131,41 @@ auto-confirm that did not exist.
 
 ---
 
-## The one thing that still needs a person
+## The AI path is live (and how to tell when it is not)
 
-**Set the Groq key** so skill-request dedupe uses the model instead of the local heuristic:
+`GROQ_API_KEY` **is** set, and skill-request dedupe answers from the model. `scripts/smoke.mjs`
+reports `"source":"ai"` with a real match. Nothing here needs a person right now.
 
-```bash
-npx supabase secrets set GROQ_API_KEY=<key from console.groq.com>
-npx supabase functions deploy classify-request
+It was down for a day and the handoff blamed the wrong thing, so read this before you repeat that.
+The key had been set since 29 Aug; what had actually happened is that Groq retired
+`llama-3.3-70b-versatile` and the account lost access — there is no llama chat model on it at all
+any more. The call was 404ing with `model_not_found`. It is now `openai/gpt-oss-120b`, chosen off
+the account's own `/v1/models` list rather than guessed.
+
+**A missing key and a broken call used to look identical from outside**, because both return
+`source: 'unavailable'`. They no longer do — `dedupe` returns a `detail` field with the HTTP status
+and body. If the AI path goes quiet, invoke the function and read `detail` before touching the key:
+
+```js
+await supabase.functions.invoke('classify-request',
+  { body: { mode: 'classify', title: 'fix my bike', description: '', skills } })
+// -> { source, reasoning, detail: "groq 404: ...model_not_found..." }
 ```
 
-The function talks to Groq (`llama-3.3-70b-versatile`); the Gemini path is gone. Nothing breaks
-without the key — `scripts/smoke.mjs` reports *"Catalog matching is running without the AI service
-configured"*, and the client falls back to token overlap. But it is a visible AI feature for judging.
+The second thing that bites is the **free-tier rate limit**: 8000 tokens per minute, shared. The
+prompt used to carry all 65 catalog UUIDs, which cost ~2000 tokens a call — about three requests
+before Groq starts refusing with a 429, which is well within what a demo does. The catalog is now
+sent as line numbers and the id is mapped back server-side, so the model never round-trips a UUID
+and cannot return one that is not in range. There is also one short retry on 429, capped at 3s
+because somebody is watching a spinner. Five back-to-back requests now all get a model answer.
 
-One consequence worth knowing: with the key missing, a brand-new skill proposed from the request
-dialog lands as `status = 'pending'` instead of `approved`, so it stays out of search. See
-*Releasing a stuck skill* below.
+`reasoning` stays plain English for the person who asked; `detail` is where the operational cause
+goes. Do not merge them.
+
+One consequence worth knowing: if the model ever *is* unreachable, a brand-new skill proposed from
+the request dialog lands as `status = 'pending'` instead of `approved`, so it stays out of search.
+That is deliberate — a token-overlap miss is not the judgement that earns a place in the catalog.
+See *Releasing a stuck skill* below.
 
 ---
 
@@ -231,8 +250,7 @@ ago. It is test scaffolding; nothing in `src/` imports it.
 
 ### Before the demo (highest value first)
 
-1. **Set `GROQ_API_KEY`** — see *The one thing that still needs a person* above.
-2. **Rehearse the demo twice.** The script in `IMPLEMENTATION_PLAN.md` §9 works as written, with one
+1. **Rehearse the demo twice.** The script in `IMPLEMENTATION_PLAN.md` §9 works as written, with one
    caveat: step 6 says "force-complete, teacher earns a token", but the demo booking is a **swap**,
    and swaps correctly move no tokens. Either say "no tokens move, that is the point", or book a
    token session first and force-complete that one. Decide which and rehearse it.
@@ -246,9 +264,9 @@ ago. It is test scaffolding; nothing in `src/` imports it.
    easy path.
 
    Sam needs a non-zero token balance for any of this. Check before you rehearse.
-3. **Fill in the contributions table** at the bottom of `README.md` — Devpost scores it.
-4. **Record the 3-minute video.**
-5. **Keep pushing, and make the repo public.** `origin` is
+2. **Fill in the contributions table** at the bottom of `README.md` — Devpost scores it.
+3. **Record the 3-minute video.**
+4. **Keep pushing, and make the repo public.** `origin` is
    `Daniel-Devkota/Binary-Budget-Coders-BBC-2026-Hackathon`; as of 30 Aug `main` is level with it.
    Judges score version history, so keep committing in small steps rather than one dump at the end.
 

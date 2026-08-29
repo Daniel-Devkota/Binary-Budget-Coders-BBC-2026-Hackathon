@@ -16,7 +16,16 @@
  * token-overlap miss is not the judgement that earns a place in the catalog.
  */
 
-const MODEL = 'llama-3.3-70b-versatile'
+/**
+ * Groq retires models without warning and the account loses access the same
+ * day. `llama-3.3-70b-versatile` was the original pick and it now 404s with
+ * `model_not_found` — no llama chat model is on this account at all any more.
+ *
+ * That failure is indistinguishable from a missing key unless you read the
+ * body, which is why `dedupe` reports a `detail`. If the AI path goes quiet
+ * again, invoke the function and read that field before assuming the key.
+ */
+const MODEL = 'openai/gpt-oss-120b'
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -25,7 +34,17 @@ const CORS = {
 }
 
 type Skill = { id: string; name: string }
-type Dedupe = { matchedSkillId: string | null; reasoning: string; source: 'ai' | 'unavailable' }
+type Dedupe = {
+  matchedSkillId: string | null
+  reasoning: string
+  source: 'ai' | 'unavailable'
+  /**
+   * Why the model did not answer. `reasoning` is shown to the person who asked
+   * and must stay in plain English, so the operational cause goes here instead
+   * of being swallowed. Never contains the key.
+   */
+  detail?: string
+}
 
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), {
@@ -41,14 +60,21 @@ async function dedupe(title: string, description: string, skills: Skill[]): Prom
       matchedSkillId: null,
       reasoning: 'Catalog matching is running without the AI service configured.',
       source: 'unavailable',
+      detail: 'GROQ_API_KEY is not set',
     }
   }
 
-  const catalog = skills.map((s) => `${s.id}\t${s.name}`).join('\n')
+  // The catalog is sent as line numbers, not UUIDs. A uuid is ~36 characters
+  // and there are 65 of them, which was over half the prompt and the reason a
+  // single call cost ~2000 tokens against a free-tier ceiling of 8000 per
+  // minute — roughly three requests before it starts refusing. Indices cut that
+  // by about a third and the id never has to survive a round trip through a
+  // language model.
+  const catalog = skills.map((s, i) => `${i}\t${s.name}`).join('\n')
 
   const prompt = `You are deduplicating a skill-exchange request against an existing catalog.
 
-CATALOG (id, tab, name):
+CATALOG (index, tab, name):
 ${catalog}
 
 REQUEST TITLE: ${title}
@@ -60,10 +86,10 @@ partner's family in sign" is "Auslan". Only match when a tutor teaching the
 catalog skill would genuinely satisfy this request. If nothing fits, return null.
 
 Respond with JSON only:
-{"matchedSkillId": "<catalog id or null>", "reasoning": "<one sentence, addressed to the person who asked, in plain Australian English>"}`
+{"matchIndex": <catalog index as a number, or null>, "reasoning": "<one sentence, addressed to the person who asked, in plain Australian English>"}`
 
-  try {
-    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+  const ask = () =>
+    fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -77,13 +103,31 @@ Respond with JSON only:
       }),
     })
 
-    // A retired model id lands here. Degrading to the heuristic beats blocking
-    // the post, so this is never fatal.
+  try {
+    let res = await ask()
+
+    // The free tier meters tokens per minute and says how long to wait. Two
+    // people posting requests back to back is an ordinary thing to happen
+    // during a demo, so one short retry is worth it — but the person is
+    // watching a spinner, so it is capped well below what Groq may suggest.
+    if (res.status === 429) {
+      const wait = Math.min(
+        3000,
+        Math.round((parseFloat(res.headers.get('retry-after') ?? '') || 2) * 1000),
+      )
+      await new Promise((r) => setTimeout(r, wait))
+      res = await ask()
+    }
+
+    // A retired model id lands here too. Degrading to the heuristic beats
+    // blocking the post, so none of this is ever fatal.
     if (!res.ok) {
+      const body = await res.text().catch(() => '')
       return {
         matchedSkillId: null,
         reasoning: 'Matched against the catalog locally.',
         source: 'unavailable',
+        detail: `groq ${res.status}: ${body.slice(0, 300)}`,
       }
     }
 
@@ -91,8 +135,9 @@ Respond with JSON only:
     const text = data?.choices?.[0]?.message?.content ?? '{}'
     const parsed = JSON.parse(text)
 
-    // Never trust the model with an id that is not actually in the catalog.
-    const matched = skills.find((s) => s.id === parsed.matchedSkillId) ?? null
+    // Never trust the model with anything but a position we can bounds-check.
+    const i = typeof parsed.matchIndex === 'number' ? parsed.matchIndex : -1
+    const matched = Number.isInteger(i) && i >= 0 && i < skills.length ? skills[i] : null
 
     return {
       matchedSkillId: matched?.id ?? null,
@@ -104,11 +149,12 @@ Respond with JSON only:
             : 'Nothing in the catalog matches this yet.',
       source: 'ai',
     }
-  } catch {
+  } catch (e) {
     return {
       matchedSkillId: null,
       reasoning: 'Matched against the catalog locally.',
       source: 'unavailable',
+      detail: `groq threw: ${(e as Error)?.message ?? String(e)}`.slice(0, 300),
     }
   }
 }

@@ -1,6 +1,15 @@
-/** Exercises the token path end to end: book → force complete → ledger. */
+/**
+ * Exercises the token path end to end: book → force complete → ledger.
+ *
+ * This run costs Sam a net token every time — he spends one on the booking and
+ * the teacher is the one who earns it back. Three runs from a standing start and
+ * he hits zero, after which this fails with "insufficient tokens" and, more to
+ * the point, he cannot book anything in the demo either. So the script tops him
+ * up first, loudly, rather than leaving a trap for whoever runs it next.
+ */
 import { createClient } from '@supabase/supabase-js'
 import { readFileSync } from 'node:fs'
+import { q1 } from './dbq.mjs'
 
 const env = Object.fromEntries(
   readFileSync('.env', 'utf8').split('\n').filter((l) => l.includes('=') && !l.startsWith('#'))
@@ -12,6 +21,16 @@ const must = ({ data, error }) => { if (error) throw error; return data }
 const learner = mk()
 must(await learner.auth.signInWithPassword({ email: 'sam@blocks.demo', password: 'blocks1234' }))
 const me = (await learner.auth.getUser()).data.user.id
+
+// The ledger is the source of truth and a trigger keeps token_balance in step,
+// so a top-up is an insert, never an update to the balance.
+const start = must(await learner.from('profiles').select('token_balance').eq('id', me).single())
+if (start.token_balance < 2) {
+  const need = 2 - start.token_balance
+  q1(`insert into public.token_ledger (user_id, delta, reason)
+      select '${me}', 1, 'weekly_grant' from generate_series(1, ${need}); select 1 as ok`)
+  console.log(`topped the learner up by ${need} (was ${start.token_balance}) so this run can book`)
+}
 
 const before = must(await learner.from('profiles').select('token_balance').eq('id', me).single())
 console.log('learner balance before:', before.token_balance)
