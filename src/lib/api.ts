@@ -238,7 +238,22 @@ export async function fetchPerfectSwaps(userId: string): Promise<PerfectSwap[]> 
 }
 
 // ─── bookings ───────────────────────────────────────────────────────────────
+
+/**
+ * Completes held bookings whose 48 hours are up. pg_cron runs this every 15
+ * minutes; this call is the belt to that pair of braces, and it is why the
+ * card's "auto-confirms" promise holds during a demo rather than up to a
+ * quarter of an hour later. Deliberately not awaited — it advances only
+ * bookings that already earned it, so nobody has to wait on it, and a failure
+ * must not stop the page from rendering.
+ */
+export function runAutoConfirms() {
+  return supabase.rpc('run_auto_confirms')
+}
+
 export async function fetchMyBookings(userId: string) {
+  void runAutoConfirms()
+
   const rows = unwrap(
     await supabase
       .from('bookings')

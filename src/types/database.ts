@@ -104,6 +104,7 @@ export type Database = {
           auto_confirm_at: string | null
           cancelled_by: string | null
           confirmed_at: string | null
+          confirmed_method: string | null
           created_at: string
           held_at: string | null
           id: string
@@ -119,6 +120,7 @@ export type Database = {
           auto_confirm_at?: string | null
           cancelled_by?: string | null
           confirmed_at?: string | null
+          confirmed_method?: string | null
           created_at?: string
           held_at?: string | null
           id?: string
@@ -134,6 +136,7 @@ export type Database = {
           auto_confirm_at?: string | null
           cancelled_by?: string | null
           confirmed_at?: string | null
+          confirmed_method?: string | null
           created_at?: string
           held_at?: string | null
           id?: string
@@ -766,8 +769,8 @@ export type Database = {
           created_at?: string | null
           ends_at?: string | null
           id?: string | null
-          lat?: number | null
-          lng?: number | null
+          lat?: never
+          lng?: never
           location_text?: never
           meeting_url?: never
           mode?: string | null
@@ -780,8 +783,8 @@ export type Database = {
           created_at?: string | null
           ends_at?: string | null
           id?: string | null
-          lat?: number | null
-          lng?: number | null
+          lat?: never
+          lng?: never
           location_text?: never
           meeting_url?: never
           mode?: string | null
@@ -822,6 +825,18 @@ export type Database = {
         Returns: undefined
       }
       get_or_create_conversation: { Args: { p_other: string }; Returns: string }
+      jitter_point: {
+        Args: {
+          p_lat: number
+          p_lng: number
+          p_metres?: number
+          p_seed: string
+        }
+        Returns: {
+          lat: number
+          lng: number
+        }[]
+      }
       mark_session_held: { Args: { p_booking_id: string }; Returns: undefined }
       perfect_swaps: {
         Args: { p_user: string }
@@ -829,31 +844,6 @@ export type Database = {
           partner_id: string
           they_teach_id: string
           they_want_id: string
-        }[]
-      }
-      slots_in_bounds: {
-        Args: {
-          p_max_lat: number
-          p_max_lng: number
-          p_min_lat: number
-          p_min_lng: number
-          p_zoom?: number
-        }
-        Returns: {
-          kind: string
-          slot_id: string | null
-          lat: number
-          lng: number
-          session_count: number
-          label: string
-          skill_id: string | null
-          skill_name: string | null
-          skill_slug: string | null
-          teacher_id: string | null
-          teacher_name: string | null
-          teacher_avatar: string | null
-          starts_at: string | null
-          ends_at: string | null
         }[]
       }
       propose_swap: {
@@ -867,6 +857,32 @@ export type Database = {
       respond_to_swap: {
         Args: { p_accept: boolean; p_proposal_id: string }
         Returns: string
+      }
+      run_auto_confirms: { Args: never; Returns: number }
+      slots_in_bounds: {
+        Args: {
+          p_max_lat: number
+          p_max_lng: number
+          p_min_lat: number
+          p_min_lng: number
+          p_zoom?: number
+        }
+        Returns: {
+          ends_at: string
+          kind: string
+          label: string
+          lat: number
+          lng: number
+          session_count: number
+          skill_id: string
+          skill_name: string
+          skill_slug: string
+          slot_id: string
+          starts_at: string
+          teacher_avatar: string
+          teacher_id: string
+          teacher_name: string
+        }[]
       }
       viewer_may_see_slot_details: {
         Args: { p_slot: string; p_teacher: string }
