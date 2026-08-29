@@ -26,7 +26,7 @@ export function AuthPage({ mode }: { mode: 'signin' | 'signup' }) {
     setError(null)
     try {
       if (mode === 'signup') {
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
@@ -37,6 +37,16 @@ export function AuthPage({ mode }: { mode: 'signin' | 'signup' }) {
           },
         })
         if (error) throw error
+        // Email confirmation is off on the project, so signUp hands back a session and
+        // the redirect below fires straight away. Belt and braces if it ever gets turned
+        // back on: sign in explicitly rather than stranding them on this screen.
+        if (!data.session) {
+          const { error: signInError } = await supabase.auth.signInWithPassword({
+            email,
+            password,
+          })
+          if (signInError) throw signInError
+        }
         toast.success(`Welcome to ${APP_NAME}. Two tokens are on us.`)
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password })
