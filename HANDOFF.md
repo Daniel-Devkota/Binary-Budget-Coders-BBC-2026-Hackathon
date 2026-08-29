@@ -1,7 +1,22 @@
 # Handoff — Skill Up (SYNCS Hack 2026)
 
-Written at the end of the first build session. Read this plus `IMPLEMENTATION_PLAN.md`
-and you have everything.
+Start here. This file is the current state of the project; everything else is either the
+original spec or a plan for work that has not happened yet.
+
+## The documents, and which are still live
+
+| File | What it is | Status |
+|---|---|---|
+| `HANDOFF.md` | This file — where things stand, pitfalls, what is left | **Live. Read first.** |
+| `IMPLEMENTATION_PLAN.md` | The original spec: schema, RLS, screens, and the demo script in §9 | **Live**, and still accurate for what shipped. §9 is the demo script |
+| `PLAN-SESSION-CONFIRMATION.md` | Confirm codes, real auto-confirm, photo at the confirming moment | **Not started.** Decisions inside are `PROPOSED`, not signed off |
+| `README.md` | Submission-facing. Contributions table still needs filling in | Live |
+| `demo-video-script.md`, `material/` | Video script and the event's own materials | Live |
+| `previous-chats/` | Raw session transcripts kept for context transfer | Reference only — do not treat as spec |
+
+A plan file is deleted once its work ships, and what still constrains the code moves into
+*Shipped since the first session* below. If you finish `PLAN-SESSION-CONFIRMATION.md`, do the same
+to it.
 
 ---
 
@@ -33,6 +48,35 @@ and you have everything.
 | Landing page with lazy 3D hero and reduced-motion fallback | Working |
 | Mobile layout and drawer | Working at 390px |
 | Globe map: dive to your city, clustered pins, popup → booking | Working, verified in dev and against the production build |
+
+---
+
+## Shipped since the first session
+
+Condensed from plan files that have been deleted now that the work is in. These are the decisions
+that still constrain the code — the reasoning, not the changelog. `git log` has the changelog.
+
+**Map** (`87d2fba`, `81ab20f`). Slot coordinates are only ever served by `slots_in_bounds`, which
+jitters them ~500m first (`map_slots_in_bounds.sql:42`). The exact point is revealed with the address,
+post-confirmation, and nowhere else.
+
+**Skill requests overhaul** (`f029d7f`). Offers have a lifecycle and the loop closes.
+
+- `request_responses.status` is `pending | accepted | declined`. Accept is written by the
+  **requester** onto a row the RLS policy says only the **teacher** may write, so it goes through
+  `answer_request_offer` (`20260829000021_request_offer_lifecycle.sql:36`), a `security definer` RPC.
+  Do not try to do it with a direct update.
+- Accepting one offer declines its siblings and marks the request `fulfilled`. An ask is for one
+  teacher, and leaving four people on `pending` forever is worse than the old no-state.
+- Accepting opens a **conversation**, not a booking. The offer carries no slot reference and the
+  teacher may have published no availability.
+- The classifier runs on **Groq** (`llama-3.3-70b-versatile`). The Gemini path is gone, not kept as a
+  fallback — the client-side token-overlap heuristic is the real fallback and it works.
+- A new skill proposed from the request dialog is `approved` immediately **when the AI answered**,
+  and `pending` when only the heuristic ran. The AI answers "is this a duplicate", which is the only
+  judgement needed; a token-overlap miss is not that judgement. See *Releasing a stuck skill* below.
+- There is deliberately **no admin surface** — no `is_admin`, no roles, no moderation queue. The
+  classifier is the gate and the rare stuck skill is a hand-written `update`.
 
 ---
 
@@ -105,17 +149,16 @@ aware it is not read-only.
 
 ### Before the demo (highest value first)
 
-1. **Set `GEMINI_API_KEY`** — see above.
+1. **Set `GROQ_API_KEY`** — see *The one thing that still needs a person* above.
 2. **Rehearse the demo twice.** The script in `IMPLEMENTATION_PLAN.md` §9 works as written, with one
    caveat: step 6 says "force-complete, teacher earns a token", but the demo booking is a **swap**,
    and swaps correctly move no tokens. Either say "no tokens move, that is the point", or book a
    token session first and force-complete that one. Decide which and rehearse it.
 3. **Fill in the contributions table** at the bottom of `README.md` — Devpost scores it.
 4. **Record the 3-minute video.**
-5. **Push to GitHub and make the repo public.** `origin` is
-   `Daniel-Devkota/Binary-Budget-Coders-BBC-2026-Hackathon`, and `main` is **6 commits ahead** of it —
-   nothing from this session has been pushed. Judges score version history, so push early and keep
-   pushing. `git push origin main`.
+5. **Keep pushing, and make the repo public.** `origin` is
+   `Daniel-Devkota/Binary-Budget-Coders-BBC-2026-Hackathon`; as of 30 Aug `main` is level with it.
+   Judges score version history, so keep committing in small steps rather than one dump at the end.
 
 ### Nice to have, in rough value order
 
@@ -130,7 +173,11 @@ aware it is not read-only.
   keyboard only.
 - **Real photos in the feed.** Everything is generated block art right now, which is honest and looks
   designed, but one or two real consented photos would sell the social feature harder.
-- The whole P2/parked list in the plan: map, group sessions, ratings, recurring slots.
+- **Session confirmation** — see `PLAN-SESSION-CONFIRMATION.md`. Its Phase 1 is the standout: the
+  card promises "Auto-confirms in 48 hours" and nothing reads `auto_confirm_at`, so a booking left in
+  `held` never pays the teacher. That is a false statement in the UI, and it is a server-only fix.
+- The rest of the P2/parked list in the plan: group sessions, ratings, recurring slots. (The map has
+  since shipped.)
 
 ---
 
@@ -162,9 +209,10 @@ the skill at post time.
 ## Repository map
 
 ```
-IMPLEMENTATION_PLAN.md   the original plan — still accurate
+HANDOFF.md               this file — start here
+IMPLEMENTATION_PLAN.md   the original plan — still accurate; demo script in §9
+PLAN-SESSION-CONFIRMATION.md   confirm codes + real auto-confirm — not started
 README.md                submission-ready; contributions table needs filling in
-HANDOFF.md               this file
 src/
   components/ui/         button, card, dialog, toast, tabs … the block design system
   components/domain/     slot cards, skill pills, person rows, block art
