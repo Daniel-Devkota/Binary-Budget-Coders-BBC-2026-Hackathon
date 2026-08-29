@@ -18,11 +18,19 @@ export function ConsentPostDialog({
   open,
   onOpenChange,
   onDone,
+  offerSkip,
 }: {
   booking: BookingWithContext
   open: boolean
   onOpenChange: (v: boolean) => void
   onDone?: () => void
+  /**
+   * Set when the dialog opened on its own straight after a confirmation rather
+   * than because someone pressed "Share this session". Skipping then has to
+   * cost exactly one tap and read as an equal choice, not as a dismissal — the
+   * photo is never a condition of getting paid.
+   */
+  offerSkip?: boolean
 }) {
   const userId = useAuth((s) => s.userId)!
   const [caption, setCaption] = useState('')
@@ -106,9 +114,20 @@ export function ConsentPostDialog({
             can decline and the post disappears.
           </p>
 
-          <Button className="w-full" size="lg" onClick={submit} loading={busy}>
-            Send for approval
-          </Button>
+          {offerSkip ? (
+            <div className="grid grid-cols-2 gap-2">
+              <Button variant="outline" size="lg" onClick={() => onOpenChange(false)} disabled={busy}>
+                Skip
+              </Button>
+              <Button size="lg" onClick={submit} loading={busy}>
+                Send for approval
+              </Button>
+            </div>
+          ) : (
+            <Button className="w-full" size="lg" onClick={submit} loading={busy}>
+              Send for approval
+            </Button>
+          )}
         </div>
       </DialogContent>
     </DialogRoot>

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Video, MapPin, Clock, Repeat2, Coins, Check, X, ExternalLink, Zap } from 'lucide-react'
+import { Video, MapPin, Clock, Repeat2, Coins, Check, X, ExternalLink, Zap, KeyRound } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
@@ -13,6 +13,8 @@ import { DEV_TOOLS } from '@/lib/constants'
 import { useAuth } from '@/stores/authStore'
 import type { BookingWithContext } from '@/types/models'
 import { ConsentPostDialog } from '@/features/feed/ConsentPostDialog'
+import { ShowCodeDialog } from './ShowCodeDialog'
+import { ConfirmCodeDialog } from './ConfirmCodeDialog'
 
 const statusTone = {
   confirmed: 'indigo',
@@ -20,6 +22,18 @@ const statusTone = {
   completed: 'moss',
   cancelled: 'clay',
 } as const
+
+/**
+ * FR14. Null is not an omission — bookings completed before confirm codes
+ * existed have no method recorded, and guessing one for them would be worse
+ * than saying nothing.
+ */
+const outcomeLabel: Record<string, string> = {
+  code: 'Confirmed in person',
+  learner: 'Confirmed later',
+  auto: 'Auto-confirmed after 48 hours',
+  force: 'Completed with the demo shortcut',
+}
 
 const statusLabel = {
   confirmed: 'Confirmed',
@@ -39,10 +53,22 @@ export function BookingCard({
   const [busy, setBusy] = useState(false)
   const [postOpen, setPostOpen] = useState(false)
 
+  const [codeOpen, setCodeOpen] = useState(false)
+  const [confirmOpen, setConfirmOpen] = useState(false)
+  // Distinguishes the dialog opening on its own after a confirmation from
+  // someone deliberately pressing "Share this session" — only the first offers
+  // an equal-weight Skip.
+  const [justConfirmed, setJustConfirmed] = useState(false)
+
   const iAmTeacher = booking.teacher_id === userId
   const other = iAmTeacher ? booking.learner : booking.teacher
   const past = new Date(booking.slot.starts_at) < new Date()
   const revealed = booking.status !== 'cancelled'
+  // In-person and online are genuinely different flows from here on. Co-presence
+  // is the whole premise of the code, and two people on a video call can read
+  // six digits aloud, so online keeps the two-step attestation.
+  const inPerson = booking.slot.mode === 'in_person'
+  const awaitingConfirmation = booking.status === 'confirmed' && past
 
   const act = async (fn: () => Promise<void>, ok: string) => {
     setBusy(true)
@@ -112,7 +138,32 @@ export function BookingCard({
       )}
 
       <div className="flex flex-wrap gap-2 pt-1">
-        {booking.status === 'confirmed' && iAmTeacher && past && (
+        {awaitingConfirmation && inPerson && iAmTeacher && (
+          <>
+            <Button size="sm" onClick={() => setCodeOpen(true)}>
+              <KeyRound className="size-3.5" aria-hidden /> Show confirm code
+            </Button>
+            {/*
+              The two-step path stays reachable for in-person too. A learner
+              locked out after five wrong codes is told they can still confirm
+              the usual way, and that has to be true.
+            */}
+            <Button
+              size="sm"
+              variant="outline"
+              loading={busy}
+              onClick={() => act(() => markHeld(booking.id), 'Marked as held. Waiting on their confirmation.')}
+            >
+              <Check className="size-3.5" aria-hidden /> Confirm without a code
+            </Button>
+          </>
+        )}
+        {awaitingConfirmation && inPerson && !iAmTeacher && (
+          <Button size="sm" onClick={() => setConfirmOpen(true)}>
+            <Check className="size-3.5" aria-hidden /> Confirm session
+          </Button>
+        )}
+        {awaitingConfirmation && !inPerson && iAmTeacher && (
           <Button size="sm" loading={busy} onClick={() => act(() => markHeld(booking.id), 'Marked as held. Waiting on their confirmation.')}>
             <Check className="size-3.5" aria-hidden /> Session happened
           </Button>
@@ -138,9 +189,16 @@ export function BookingCard({
           </Button>
         )}
         {booking.status === 'completed' && (
-          <Button size="sm" variant="outline" onClick={() => setPostOpen(true)}>
-            Share this session
-          </Button>
+          <>
+            {booking.confirmed_method && outcomeLabel[booking.confirmed_method] && (
+              <p className="text-xs text-ink-faint self-center">
+                {outcomeLabel[booking.confirmed_method]}.
+              </p>
+            )}
+            <Button size="sm" variant="outline" onClick={() => setPostOpen(true)}>
+              Share this session
+            </Button>
+          </>
         )}
         {DEV_TOOLS && ['confirmed', 'held'].includes(booking.status) && (
           <Button
@@ -156,12 +214,44 @@ export function BookingCard({
         )}
       </div>
 
+      {codeOpen && (
+        <ShowCodeDialog booking={booking} open={codeOpen} onOpenChange={setCodeOpen} />
+      )}
+
+      {confirmOpen && (
+        <ConfirmCodeDialog
+          booking={booking}
+          open={confirmOpen}
+          onOpenChange={setConfirmOpen}
+          onConfirmed={async () => {
+            await refreshProfile()
+            toast.success(
+              booking.payment_type === 'token'
+                ? 'Confirmed. Their token is on the way.'
+                : 'Confirmed. A swap costs neither of you a token.',
+            )
+            // FR10 — the photo is offered where it is natural, and skipping it
+            // costs one tap. It is never a condition of anyone getting paid.
+            //
+            // onChanged() deliberately waits until that dialog closes: reloading
+            // now moves this booking from "To confirm" to "Past", which unmounts
+            // this card and takes the photo dialog with it.
+            setJustConfirmed(true)
+            setPostOpen(true)
+          }}
+        />
+      )}
+
       {postOpen && (
         <ConsentPostDialog
           booking={booking}
           open={postOpen}
-          onOpenChange={setPostOpen}
+          onOpenChange={(v) => {
+            setPostOpen(v)
+            if (!v && justConfirmed) { setJustConfirmed(false); onChanged() }
+          }}
           onDone={onChanged}
+          offerSkip={justConfirmed}
         />
       )}
     </Card>
