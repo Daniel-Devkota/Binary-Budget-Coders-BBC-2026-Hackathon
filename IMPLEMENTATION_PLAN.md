@@ -396,7 +396,7 @@ live chat silently delivers nothing.
 | `/messages` | Conversation list + realtime thread | P1 |
 | `/requests` | Open skill requests; tutors respond | P1 |
 | `/feed` | Posts from people you follow | P2 |
-| `/map` | Placeholder — "coming soon" | Parked |
+| `/map` | 3D globe → zoom into city → bookable session pins (§12) | Planned |
 
 ### Design direction
 
@@ -526,5 +526,116 @@ Deliberately deferred; defaults chosen so nothing blocks. All are cheap to chang
 
 - ~~Final app name and logo~~ — decided: **Skill Up**, with the two-hands swap mark
 - Session length fixed at 60 minutes; no recurring slots
-- Map pin semantics (teachers vs open sessions vs completed-session heatmap) — decide when the map is unparked
+- ~~Map pin semantics (teachers vs open sessions vs completed-session heatmap)~~ — decided: **open sessions** (§12.6)
 - Group sessions, ratings, and reviews — explicitly out of scope
+
+---
+
+## 12. The globe map (unparked)
+
+The map stops being a placeholder and becomes the spatial centrepiece: a **3D globe** you land on,
+spin, and dive into until individual sessions resolve under your cursor. It is the second half of the
+"blocks" idea — the landing hero shows two blocks snapping together, the globe shows every block on
+Earth waiting for a partner.
+
+### 12.1 Why a globe
+
+A flat map opens zoomed into one city and quietly says *this is a local app*. A globe opens on the
+whole planet and says *pick anywhere* — then the zoom-in is the story. It also matches the demo
+script's Slide 7 (`demo-video-script.md:99`), which already promises world → country → city.
+
+### 12.2 Stack
+
+| Concern | Choice | Why |
+|---|---|---|
+| Renderer | **MapLibre GL JS v5** with `projection: { type: 'globe' }` | True globe projection, built in, no plugin. Smoothly interpolates to Mercator as you zoom — the dive-in is free |
+| React binding | **`react-map-gl`** (maplibre entrypoint) | Declarative `<Marker>` / `<Popup>` so pins are ordinary React components in our Tailwind classes |
+| Tiles | **OpenFreeMap** vector tiles | Free, no API key, no credit card, no rate ceiling to babysit during judging |
+| Clustering | MapLibre native GeoJSON `cluster: true` | Handled in the style layer, not JS. 140 seeded slots overlap badly in Sydney without it |
+
+```
+npm i maplibre-gl react-map-gl
+```
+
+No new 3D dependency: this is WebGL via MapLibre, entirely separate from the `react-three-fiber`
+landing hero, and subject to the same discipline — lazy-loaded, never blocking first paint.
+
+### 12.3 The zoom ladder
+
+Four bands, each answering a different question. The pin layer swaps as you cross a threshold, so the
+globe never renders 140 individual markers at once.
+
+| Zoom | View | What renders | Question answered |
+|---|---|---|---|
+| 0–3 | Globe | Country halos, sized by open-session count | *Where on Earth is this happening?* |
+| 3–6 | Country | City clusters with counts | *Which cities are active?* |
+| 6–11 | City | Clustered pins, spidering apart as you zoom | *What's near me?* |
+| 11+ | Street | Individual session pins, jittered | *Can I book this one?* |
+
+Camera transitions use `flyTo` with an eased curve so a click on a cluster feels like a dive, not a
+jump cut. `prefers-reduced-motion` collapses every `flyTo` to an instant `jumpTo`.
+
+### 12.4 Privacy
+
+Non-negotiable, and it is the reason the coordinates cannot simply be selected and rendered.
+
+- In-person slot coordinates are **jittered ~500m server-side**, inside the RPC, before they ever
+  reach the browser. Jittering in React would ship the true point anyway.
+- The jitter offset is **deterministic per slot** (seeded from the slot id), so a pin does not visibly
+  wander between refetches and cannot be averaged out across repeated requests.
+- The exact point, `location_text`, and `meeting_url` stay revoked until a booking is `confirmed` —
+  already enforced by column grants in `20260829000012_slot_column_grants.sql`.
+- Online-only slots never appear on the globe at all. They have no location to reveal.
+
+### 12.5 Data layer
+
+The schema needs **no migration** — `profiles` and `availability_slots` have carried `lat`/`lng` since
+Phase 0, and the reseed populates them across Sydney, Brisbane, Melbourne, Parramatta, Newtown and
+Bondi.
+
+What's new is one RPC:
+
+```sql
+slots_in_bounds(min_lat, min_lng, max_lat, max_lng, zoom)
+  -- returns open, future, in-person slots within the viewport
+  -- coordinates jittered ~500m, deterministic on slot id
+  -- above zoom 6: individual rows
+  -- at or below zoom 6: pre-aggregated {city, lat, lng, count}
+```
+
+Aggregating server-side below zoom 6 is what keeps the globe view to one small response instead of
+every slot on the platform.
+
+### 12.6 Pin semantics — decided
+
+Pins are **open sessions**, not teachers and not a heatmap. A session is the only one of the three
+that is directly bookable, so every pin has an obvious next action, and it reuses `BookSlotDialog`
+unchanged. This closes the open decision in §11.
+
+Popup contents: skill, teacher name and avatar, start time in the viewer's timezone, token cost, and
+a **Book** button. Swap-eligible sessions get the same amber "perfect swap" treatment as `/home`.
+
+### 12.7 Build order
+
+1. Install deps; lazy-route the map component behind `React.lazy`.
+2. Globe with OpenFreeMap tiles, restrained custom style tuned to the indigo/amber palette.
+3. `slots_in_bounds` RPC with deterministic jitter — **write and verify the jitter before any pin renders**.
+4. GeoJSON source + clustered pin layers; the zoom-band swap.
+5. Popup wired to `BookSlotDialog`.
+6. Debounced refetch on `moveend`.
+7. "Use my location" via `navigator.geolocation`, falling back to the profile's city centroid.
+8. Empty state for a viewport with no sessions — offer `/requests` rather than a blank ocean.
+9. Dark-mode style variant; `prefers-reduced-motion`; keyboard pan/zoom and a text list fallback for
+   screen readers, since a canvas globe is invisible to them.
+10. Drop "(coming soon)" from the footer link (`AppShell.tsx:169`) and update the §6 route table.
+
+Steps 1–6 are the feature. 7–9 are what make it shippable rather than demo-only.
+
+### 12.8 Risks
+
+| Risk | Impact | Mitigation |
+|---|---|---|
+| Globe drops frames on a mid-range laptop mid-demo | High | Lazy chunk, cap pin count per viewport, test on the demo machine before filming |
+| Jitter implemented client-side by mistake | High — leaks exact home addresses | Jitter lives in the RPC; assert in review that the client never receives a raw coordinate |
+| Judges open the map on a region with no sessions | Medium | Default camera flies to the viewer's city, not to (0,0) |
+| Scope creep — routing, directions, heatmaps | Medium | Pins and popups only. Anything else is post-hackathon |
