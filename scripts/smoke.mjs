@@ -54,3 +54,13 @@ await step('messages visible', async () =>
 
 await step('posts published', async () =>
   ({ n: must(await sb.from('posts').select('id').eq('status','published')).length }))
+
+await step('classify-request edge function', async () => {
+  const skills = must(await sb.from('skills').select('id, name'))
+  const { data, error } = await sb.functions.invoke('classify-request', {
+    body: { title: 'Want to learn to fix my own bike', description: 'Gears slip constantly.', skills },
+  })
+  if (error) throw error
+  const match = skills.find((s) => s.id === data.matchedSkillId)
+  return { matched: match?.name ?? null, reasoning: data.reasoning }
+})
