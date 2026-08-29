@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SkillUp — Demo Video Script</title>
+<style>
+  :root{
+    --bg:#f6f5f2; --card:#fff; --ink:#1c1b19; --muted:#6b6862;
+    --accent:#d9531e; --accent-soft:#fdf0e9; --line:#e4e1db;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#151513; --card:#1e1e1c; --ink:#ece9e3; --muted:#9d9a93;
+           --accent:#ff8a52; --accent-soft:#2a1f19; --line:#302f2c; }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased}
+  .wrap{max-width:820px;margin:0 auto;padding:48px 24px 96px}
+  header{border-bottom:2px solid var(--ink);padding-bottom:20px;margin-bottom:36px}
+  .eyebrow{text-transform:uppercase;letter-spacing:.14em;font-size:12px;font-weight:700;color:var(--accent);margin:0 0 8px}
+  h1{font-size:clamp(30px,6vw,44px);line-height:1.1;margin:0 0 12px;letter-spacing:-.02em}
+  .meta{color:var(--muted);font-size:14px;margin:0}
+  .note{background:var(--accent-soft);border-left:3px solid var(--accent);padding:12px 16px;border-radius:0 8px 8px 0;font-size:14px;margin:24px 0 0}
+  nav{margin:32px 0 44px;font-size:14px}
+  nav ol{margin:8px 0 0;padding-left:20px;columns:2;column-gap:32px}
+  nav a{color:var(--ink);text-decoration:none;border-bottom:1px solid var(--line)}
+  nav a:hover{color:var(--accent);border-color:var(--accent)}
+  section{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:24px 26px;margin:0 0 20px}
+  .head{display:flex;flex-wrap:wrap;align-items:baseline;gap:10px;margin-bottom:4px}
+  .num{font-size:12px;font-weight:800;letter-spacing:.1em;color:var(--accent);text-transform:uppercase}
+  h2{font-size:21px;margin:0;letter-spacing:-.01em}
+  .time{margin-left:auto;font:600 13px/1 ui-monospace,SFMono-Regular,Menlo,monospace;
+    color:var(--muted);background:var(--bg);border:1px solid var(--line);padding:5px 9px;border-radius:999px;white-space:nowrap}
+  .visual{font-size:14px;color:var(--muted);margin:10px 0 18px}
+  .visual b{color:var(--ink);font-weight:600}
+  .label{text-transform:uppercase;letter-spacing:.12em;font-size:11px;font-weight:700;color:var(--muted);margin:0 0 6px}
+  .script{font-size:17px;line-height:1.7}
+  .script p{margin:0 0 12px}
+  .onscreen{margin-top:16px;padding:10px 14px;border:1px dashed var(--line);border-radius:8px;font-size:14px}
+  .onscreen b{color:var(--accent)}
+  .skit{margin:16px 0 0}
+  .line{display:grid;grid-template-columns:90px 1fr;gap:14px;padding:9px 0;border-top:1px solid var(--line)}
+  .line:first-child{border-top:0}
+  .who{font-weight:800;font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);padding-top:3px}
+  .dir{color:var(--muted);font-style:italic}
+  .stage{font-style:italic;color:var(--muted);font-size:14px;margin:10px 0 0}
+  ul.prod{margin:12px 0 0;padding-left:20px}
+  ul.prod li{margin-bottom:9px}
+  footer{margin-top:40px;color:var(--muted);font-size:13px;text-align:center}
+  @media(max-width:600px){ nav ol{columns:1} .line{grid-template-columns:1fr;gap:2px} }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <p class="eyebrow">Hackathon Demo Video</p>
+  <h1>SkillUp — Video Script</h1>
+  <p class="meta">Target length ~3:00 &nbsp;·&nbsp; 9 slides &nbsp;·&nbsp; cold-open skit + screen recordings</p>
+  <p class="note">Replace “SkillUp” throughout with the final project name before recording.</p>
+</header>
+
+<nav>
+  <p class="label">Run sheet</p>
+  <ol>
+    <li><a href="#s1">Cold Open Skit — 0:00</a></li>
+    <li><a href="#s2">The Problem — 0:30</a></li>
+    <li><a href="#s3">The Skill Swap — 0:45</a></li>
+    <li><a href="#s4">Onboarding — 1:05</a></li>
+    <li><a href="#s5">The Match — 1:20</a></li>
+    <li><a href="#s6">Exchange + Proof — 1:40</a></li>
+    <li><a href="#s7">Map — 2:00</a></li>
+    <li><a href="#s8">Feed &amp; Profile — 2:15</a></li>
+    <li><a href="#s9">Closing / CTA — 2:40</a></li>
+  </ol>
+</nav>
+
+<section id="s1">
+  <div class="head"><span class="num">Slide 1</span><h2>Cold Open Skit</h2><span class="time">0:00 – 0:30</span></div>
+  <p class="visual">No slide, no logo yet — just the skit. This is the hook: fast and a little funny. Two teammates on camera, phone selfie-style or webcam.</p>
+
+  <div class="skit">
+    <div class="line"><div class="who">Alex</div><div><span class="dir">(hunched over a laptop, frustrated)</span> Okay, YouTube tutorial #14 on “Learn Japanese in 10 Minutes.” Still can’t order ramen without pointing at the menu.</div></div>
+    <div class="line"><div class="who">Jordan</div><div><span class="dir">(walks in)</span> Still on the Japanese thing?</div></div>
+    <div class="line"><div class="who">Alex</div><div>I just need someone to actually <em>talk</em> to me. Correct my pronunciation. In real time. Not a guy speed-running hiragana over lo-fi beats.</div></div>
+    <div class="line"><div class="who">Jordan</div><div>So hire a tutor?</div></div>
+    <div class="line"><div class="who">Alex</div><div><span class="dir">(laughs)</span> For conversational practice? That’s like sixty bucks an hour.</div></div>
+    <div class="line"><div class="who">Jordan</div><div>Fair. …you know I’m fluent in Japanese, right?</div></div>
+    <div class="line"><div class="who">Alex</div><div><span class="dir">(pause)</span> …You’ve literally been in the room the whole time.</div></div>
+    <div class="line"><div class="who">Jordan</div><div><span class="dir">(grinning, pulls out phone)</span> I know. But there’s a better way to do this than me just yelling grammar rules at you for free forever. <span class="dir">(beat)</span> …SkillUp.</div></div>
+  </div>
+  <p class="stage">Whip pan / zoom into phone screen — title card slams in.</p>
+  <div class="onscreen"><b>On screen:</b> “Learn anything. From someone nearby. For real.”</div>
+</section>
+
+<section id="s2">
+  <div class="head"><span class="num">Slide 2</span><h2>The Problem</h2><span class="time">0:30 – 0:45</span></div>
+  <p class="visual"><b>Visual:</b> Simple icon row — isolated learner watching a video / a price tag next to a tutor icon / no local human connection.</p>
+  <p class="label">Script</p>
+  <div class="script"><p>“You’re stuck between two bad options: impersonal, one-size-fits-all videos, or personalized tutoring that can cost fifty to a hundred dollars an hour. Meanwhile, the person who could teach you in twenty minutes for free might live down the street — you just have no way to find them.”</p></div>
+</section>
+
+<section id="s3">
+  <div class="head"><span class="num">Slide 3</span><h2>The Solution: The Skill Swap</h2><span class="time">0:45 – 1:05</span></div>
+  <p class="visual"><b>Visual:</b> App logo + core mechanic diagram — two profile cards (“Can Teach: Guitar” / “Wants to Learn: Guitar”) sliding together into a matched pair.</p>
+  <p class="label">Script</p>
+  <div class="script"><p>“SkillUp is built around one core idea: everyone has something to teach, and something they want to learn. You list both — the skills you can pass on, and the skills you’re chasing — and our matching engine pairs you up with people nearby whose teach list matches your learn list, and vice versa. That’s the swap. And because it’s person-to-person, it’s not just a transaction — it’s a real connection with someone in your community, sometimes across cultures and backgrounds you’d never otherwise cross paths with.”</p></div>
+</section>
+
+<section id="s4">
+  <div class="head"><span class="num">Slide 4</span><h2>Onboarding: Set Your Skills</h2><span class="time">1:05 – 1:20</span></div>
+  <p class="visual"><b>Visual:</b> Screen recording — profile setup showing two lists side by side: “I can teach” / “I want to learn,” plus availability + location.</p>
+  <p class="label">Script</p>
+  <div class="script"><p>“Onboarding is quick: set what you can teach, what you want to learn, your availability, and your location for in-person matches — or mark yourself open to online sessions.”</p></div>
+</section>
+
+<section id="s5">
+  <div class="head"><span class="num">Slide 5</span><h2>The Match</h2><span class="time">1:20 – 1:40</span></div>
+  <p class="visual"><b>Visual:</b> Screen recording — the app surfacing a matched swap (not a search results list): “You teach Photography, they teach Japanese — matched!”</p>
+  <p class="label">Script</p>
+  <div class="script"><p>“Instead of just browsing a list, SkillUp actively matches you — surfacing people whose skills complement yours. You can still search for a specific skill directly, but the swap is what makes it click: you’re not just booking a class, you’re trading knowledge.”</p></div>
+  <div class="onscreen"><b>Callout on screen:</b> “Group sessions are capped 1-in-5 — keeps exchanges intimate, not lecture halls.”</div>
+</section>
+
+<section id="s6">
+  <div class="head"><span class="num">Slide 6</span><h2>The Exchange + Proof</h2><span class="time">1:40 – 2:00</span></div>
+  <p class="visual"><b>Visual:</b> Screen recording — booking confirmation (tokens spent to book) → mock “session complete” photo capture screen.</p>
+  <p class="label">Script</p>
+  <div class="script"><p>“Booking a session costs tokens; teaching one earns them back — plus everyone gets a small weekly token allowance just for being active. After the session — in person or on a call — you snap a photo together as proof of the exchange. That photo becomes part of your permanent skill history.”</p></div>
+</section>
+
+<section id="s7">
+  <div class="head"><span class="num">Slide 7</span><h2>Map</h2><span class="time">2:00 – 2:15</span></div>
+  <p class="visual"><b>Visual:</b> Screen recording — zoom from world map → country → city view.</p>
+  <p class="label">Script</p>
+  <div class="script"><p>“The map lets you zoom from a global view all the way down to your own city, so you can see exactly who’s teaching or offering swaps near you right now.”</p></div>
+</section>
+
+<section id="s8">
+  <div class="head"><span class="num">Slide 8</span><h2>Social Feed &amp; Profile</h2><span class="time">2:15 – 2:40</span></div>
+  <p class="visual"><b>Visual:</b> Screen recording — Feed page (friends’ completed sessions) → Profile page with skill albums.</p>
+  <p class="label">Script</p>
+  <div class="script"><p>“Your profile becomes a visual record — photo albums organized by skill, showing your whole learning journey. And your feed shows what your friends have been learning and who taught them — so skill-building becomes social, not solitary. Every swap is also a small thread connecting neighbors and communities who might never have met otherwise.”</p></div>
+</section>
+
+<section id="s9">
+  <div class="head"><span class="num">Slide 9</span><h2>Closing / CTA</h2><span class="time">2:40 – 3:00</span></div>
+  <p class="visual"><b>Visual:</b> Full app logo, team names, tech stack line, “Built at [Hackathon Name]”.</p>
+  <p class="label">Script</p>
+  <div class="script"><p>“That’s SkillUp — turning your neighborhood into a classroom, one swap at a time. Thanks for watching!”</p></div>
+  <p class="stage">Optional: cut back to Alex &amp; Jordan, thumbs up to camera, for a callback laugh.</p>
+</section>
+
+<section id="prod">
+  <div class="head"><span class="num">Appendix</span><h2>Production Notes</h2></div>
+  <ul class="prod">
+    <li>Keep the skit under 30 seconds — judges score substance; the skit just needs to earn attention.</li>
+    <li>Record each flow (search → book → photo → map → feed) as separate clean clips so you can cut tightly to the script timing.</li>
+    <li>Short on build time? Mock the “session complete” photo screen with placeholder UI — it doesn’t need to be functional for the video.</li>
+    <li>Use a consistent lower-third caption style (feature name in the corner) during screen recordings so judges can follow along on mute.</li>
+  </ul>
+</section>
+
+<footer>material/demo-video-script.html</footer>
+</div>
+</body>
+</html>
