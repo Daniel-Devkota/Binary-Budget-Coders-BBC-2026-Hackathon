@@ -13,6 +13,7 @@ import { Tabs, TabList, Tab, TabPanel } from '@/components/ui/Tabs'
 import { toast } from '@/components/ui/Toast'
 import { PersonRow } from '@/components/domain/PersonRow'
 import { SkillPill } from '@/components/domain/SkillPill'
+import { BlockArt } from '@/components/domain/BlockArt'
 import { relative } from '@/lib/format'
 import { errorMessage } from '@/lib/utils'
 
@@ -24,7 +25,7 @@ type PostRow = {
   status: string
   author: { id: string; display_name: string; avatar_url: string | null; city: string | null }
   partner: { id: string; display_name: string; avatar_url: string | null; city: string | null }
-  booking: { skill: { name: string; slug: string; category?: { slug: string } | null } } | null
+  skill: { name: string; slug: string; category?: { slug: string } | null } | null
 }
 
 export function FeedPage() {
@@ -100,13 +101,15 @@ export function FeedPage() {
 function PostCard({ post: p }: { post: PostRow }) {
   return (
     <Card lift className="overflow-hidden">
-      {p.photo_url && (
+      {p.photo_url ? (
         <img src={p.photo_url} alt="" className="w-full max-h-80 object-cover border-b-2 border-line-strong" loading="lazy" />
+      ) : (
+        <BlockArt seed={p.id} className="h-28 border-b-2 border-line-strong" />
       )}
       <div className="p-4 space-y-3">
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <PersonRow person={p.author} size="sm" subtitle={relative(p.created_at)} />
-          {p.booking?.skill && <SkillPill skill={p.booking.skill as never} />}
+          {p.skill && <SkillPill skill={p.skill} />}
         </div>
         <p className="text-[15px] leading-relaxed">{p.caption}</p>
         <p className="text-xs text-ink-faint">

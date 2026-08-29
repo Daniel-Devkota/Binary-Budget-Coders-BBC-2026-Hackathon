@@ -327,11 +327,13 @@ export async function setFollow(followerId: string, followeeId: string, on: bool
 }
 
 // ─── posts and the feed ─────────────────────────────────────────────────────
+// The skill is denormalised onto the post: bookings are readable only by their
+// two participants, so embedding through the booking nulls out for everyone else.
 const POST_SELECT = `
   *,
   author:profiles!posts_author_id_fkey(*),
   partner:profiles!posts_partner_id_fkey(*),
-  booking:bookings(id, skill:skills(*, category:skill_categories(*)))
+  skill:skills(*, category:skill_categories(*))
 `
 
 export async function fetchFeed(followingIds: string[], limit = 30) {
@@ -388,6 +390,7 @@ export async function createPost(input: {
   booking_id: string
   author_id: string
   partner_id: string
+  skill_id: string
   caption: string
   photo_url: string | null
 }) {

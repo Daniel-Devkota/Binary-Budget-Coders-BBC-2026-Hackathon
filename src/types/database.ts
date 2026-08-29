@@ -313,6 +313,7 @@ export type Database = {
           id: string
           partner_id: string
           photo_url: string | null
+          skill_id: string | null
           status: string
         }
         Insert: {
@@ -323,6 +324,7 @@ export type Database = {
           id?: string
           partner_id: string
           photo_url?: string | null
+          skill_id?: string | null
           status?: string
         }
         Update: {
@@ -333,6 +335,7 @@ export type Database = {
           id?: string
           partner_id?: string
           photo_url?: string | null
+          skill_id?: string | null
           status?: string
         }
         Relationships: [
@@ -355,6 +358,13 @@ export type Database = {
             columns: ["partner_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "posts_skill_id_fkey"
+            columns: ["skill_id"]
+            isOneToOne: false
+            referencedRelation: "skills"
             referencedColumns: ["id"]
           },
         ]

@@ -18,6 +18,7 @@ import { EmptyState } from '@/components/ui/EmptyState'
 import { toast } from '@/components/ui/Toast'
 import { SkillPill } from '@/components/domain/SkillPill'
 import { SlotCard } from '@/components/domain/SlotCard'
+import { BlockArt } from '@/components/domain/BlockArt'
 import { errorMessage } from '@/lib/utils'
 import { relative } from '@/lib/format'
 
@@ -187,13 +188,15 @@ export function PublicProfilePage() {
   )
 }
 
-type AlbumPost = { photo_url: string | null; caption: string | null; created_at: string }
+type AlbumPost = { id: string; photo_url: string | null; caption: string | null; created_at: string }
 
 function AlbumTile({ post: p }: { post: AlbumPost }) {
   return (
     <Card lift className="overflow-hidden">
-      {p.photo_url && (
+      {p.photo_url ? (
         <img src={p.photo_url} alt="" className="w-full h-40 object-cover border-b-2 border-line-strong" loading="lazy" />
+      ) : (
+        <BlockArt seed={p.id} className="h-24 border-b-2 border-line-strong" />
       )}
       <div className="p-4 space-y-1">
         <p className="text-sm text-ink-soft">{p.caption}</p>

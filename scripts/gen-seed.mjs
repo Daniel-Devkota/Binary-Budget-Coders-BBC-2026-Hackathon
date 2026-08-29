@@ -398,20 +398,21 @@ for (const u of users) {
 w(``)
 
 // ─── feed posts from completed sessions ──────────────────────────────────────
-const CAPTIONS = [
-  'First time holding a barre chord without wincing. Two more sessions and I might be dangerous.',
-  'Traded an hour of Spanish for an hour of sourdough. Both of us went home with something.',
-  'Turns out the thing I found impossible was just one grip adjustment away.',
-  'An hour in and I understood more than six months of videos gave me.',
-  'Swapped skills over coffee. Best hour of my week, and it cost nothing.',
-  'Taught this for the first time today. Explaining it made me realise how much I actually know.',
-  'Absolute beginner this morning, made a genuinely edible thing by lunch.',
-  'Booked one session to try it. Booked three more before I left.',
+// Captions name the skill they came from, so the feed never reads like filler.
+const CAPTION_TEMPLATES = [
+  (s) => `First hour of ${s} and I already understand more than six months of videos gave me.`,
+  (s) => `Traded an hour of ${s} for an hour of something I know. Both of us went home with something.`,
+  (s) => `Turns out the ${s} thing I found impossible was one small adjustment away.`,
+  (s) => `Absolute beginner at ${s} this morning. Not any more.`,
+  (s) => `Taught ${s} for the first time today. Explaining it made me realise how much I actually know.`,
+  (s) => `Swapped ${s} over coffee. Best hour of my week, and it cost nothing.`,
+  (s) => `Booked one ${s} session to try it. Booked three more before I left.`,
+  (s) => `Nobody has ever explained ${s} to me without making me feel stupid. Until today.`,
 ]
 for (const p of pickN(completedPairs, 14)) {
   const published = chance(0.75)
-  w(`insert into public.posts (booking_id, author_id, partner_id, caption, status, created_at)
-values (${q(p.bookingId)}, ${q(p.learner.id)}, ${q(p.teacher.id)}, ${q(pick(CAPTIONS))}, ${q(published ? 'published' : 'pending_consent')}, v_now - interval '${p.daysAgo - 1} days');`)
+  w(`insert into public.posts (booking_id, author_id, partner_id, skill_id, caption, status, created_at)
+values (${q(p.bookingId)}, ${q(p.learner.id)}, ${q(p.teacher.id)}, ${q(skillBySlug[p.skill].id)}, ${q(pick(CAPTION_TEMPLATES)(skillBySlug[p.skill].name))}, ${q(published ? 'published' : 'pending_consent')}, v_now - interval '${p.daysAgo - 1} days');`)
 }
 w(``)
 

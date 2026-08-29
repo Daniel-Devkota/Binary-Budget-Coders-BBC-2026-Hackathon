@@ -1,4 +1,4 @@
-import { NavLink, Link, useNavigate } from 'react-router-dom'
+import { NavLink, Link, useLocation, useNavigate } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import {
   Search, CalendarDays, MessagesSquare, User, LogOut, Menu, X,
@@ -38,10 +38,12 @@ export function BlockMark({ className }: { className?: string }) {
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { profile, signOut } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
   const [open, setOpen] = useState(false)
   const unread = useUnreadCount()
 
-  useEffect(() => { setOpen(false) }, [])
+  // Navigating anywhere closes the mobile drawer.
+  useEffect(() => { setOpen(false) }, [location.pathname])
 
   return (
     <div className="min-h-dvh flex flex-col">
@@ -110,7 +112,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               aria-expanded={open}
               onClick={() => setOpen((v) => !v)}
             >
-              {open ? <Menu className="size-4" aria-hidden /> : <Menu className="size-4" aria-hidden />}
+              {open ? <X className="size-4" aria-hidden /> : <Menu className="size-4" aria-hidden />}
             </Button>
           </div>
         </div>
@@ -159,5 +161,3 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     </div>
   )
 }
-
-export { X }

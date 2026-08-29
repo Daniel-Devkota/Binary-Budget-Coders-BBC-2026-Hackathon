@@ -13,7 +13,7 @@ import { Input } from '@/components/ui/Input'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { toast } from '@/components/ui/Toast'
-import { clockTime, dayLabel, relative, sameDay } from '@/lib/format'
+import { clockTime, dayLabel, sameDay } from '@/lib/format'
 import { cn, errorMessage } from '@/lib/utils'
 import type { Message, Profile } from '@/types/models'
 
@@ -244,5 +244,3 @@ function Thread({
     </>
   )
 }
-
-export { relative }

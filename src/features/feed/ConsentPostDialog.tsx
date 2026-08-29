@@ -46,6 +46,7 @@ export function ConsentPostDialog({
         booking_id: booking.id,
         author_id: userId,
         partner_id: partner.id,
+        skill_id: booking.skill_id,
         caption: caption.trim(),
         photo_url,
       })
