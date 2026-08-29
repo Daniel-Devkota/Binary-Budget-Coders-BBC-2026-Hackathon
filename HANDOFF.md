@@ -102,8 +102,10 @@ aware it is not read-only.
    token session first and force-complete that one. Decide which and rehearse it.
 3. **Fill in the contributions table** at the bottom of `README.md` — Devpost scores it.
 4. **Record the 3-minute video.**
-5. **Make the GitHub repo public** and push. It has never been pushed to a remote from this session;
-   `git remote -v` is empty. Judges score version history and there are five clean commits waiting.
+5. **Push to GitHub and make the repo public.** `origin` is
+   `Daniel-Devkota/Binary-Budget-Coders-BBC-2026-Hackathon`, and `main` is **6 commits ahead** of it —
+   nothing from this session has been pushed. Judges score version history, so push early and keep
+   pushing. `git push origin main`.
 
 ### Nice to have, in rough value order
 
