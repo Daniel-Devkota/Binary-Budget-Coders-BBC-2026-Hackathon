@@ -6,7 +6,7 @@ import { APP_NAME } from '@/lib/constants'
 import { errorMessage } from '@/lib/utils'
 import { Button } from '@/components/ui/Button'
 import { Input, Field } from '@/components/ui/Input'
-import { BlockMark } from '@/components/layout/AppShell'
+import { Logo } from '@/components/brand/Logo'
 import { toast } from '@/components/ui/Toast'
 
 export function AuthPage({ mode }: { mode: 'signin' | 'signup' }) {
@@ -55,16 +55,16 @@ export function AuthPage({ mode }: { mode: 'signin' | 'signup' }) {
     <div className="min-h-dvh grid lg:grid-cols-2">
       <div className="hidden lg:flex flex-col justify-between bg-indigo-700 text-white p-10 grid-paper">
         <Link to="/" className="flex items-center gap-2 w-fit">
-          <BlockMark />
+          <Logo onDark />
           <span className="font-display font-extrabold text-lg">{APP_NAME}</span>
         </Link>
         <div className="space-y-5 max-w-md">
           <h1 className="text-4xl leading-[1.1] text-white">
-            Every person is a block of knowledge.
+            Everyone already knows something worth teaching.
           </h1>
           <p className="text-indigo-100 text-lg leading-relaxed">
-            Most of those blocks sit disconnected. {APP_NAME} connects them directly — you teach
-            what you know, you learn what you want, and no money changes hands.
+            Almost nobody gets to trade it. {APP_NAME} pairs you with someone who wants what you
+            know — you teach what you know, you learn what you want, and no money changes hands.
           </p>
           <ul className="space-y-2 text-indigo-100 text-sm">
             <li>· Two tokens the moment you join</li>
@@ -78,7 +78,7 @@ export function AuthPage({ mode }: { mode: 'signin' | 'signup' }) {
       <div className="flex items-center justify-center p-6">
         <div className="w-full max-w-sm space-y-6">
           <Link to="/" className="lg:hidden flex items-center gap-2 w-fit">
-            <BlockMark />
+            <Logo />
             <span className="font-display font-extrabold text-lg">{APP_NAME}</span>
           </Link>
 

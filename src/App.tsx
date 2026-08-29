@@ -13,7 +13,7 @@ import { ProfilePage } from '@/features/profile/ProfilePage'
 import { BookingsPage } from '@/features/booking/BookingsPage'
 import { RequestsPage } from '@/features/requests/RequestsPage'
 import { MapPlaceholder } from '@/features/home/MapPlaceholder'
-import { BlockMark } from '@/components/layout/AppShell'
+import { Logo } from '@/components/brand/Logo'
 
 const MessagesPage = lazy(() =>
   import('@/features/messaging/MessagesPage').then((m) => ({ default: m.MessagesPage })),
@@ -26,8 +26,8 @@ function FullPageLoader() {
   return (
     <div className="min-h-dvh grid place-items-center">
       <div className="flex flex-col items-center gap-3">
-        <BlockMark className="animate-pulse scale-150" />
-        <span className="text-sm text-ink-faint">Stacking blocks…</span>
+        <Logo className="size-10 animate-pulse" />
+        <span className="text-sm text-ink-faint">Warming up…</span>
       </div>
     </div>
   )

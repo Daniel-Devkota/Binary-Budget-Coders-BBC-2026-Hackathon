@@ -11,6 +11,7 @@ import { Avatar } from '@/components/ui/Avatar'
 import { TokenChip } from '@/components/ui/TokenChip'
 import { Button } from '@/components/ui/Button'
 import { useUnreadCount } from '@/features/messaging/useUnread'
+import { Logo } from '@/components/brand/Logo'
 
 const nav = [
   { to: '/home', label: 'Home', icon: Home },
@@ -20,20 +21,6 @@ const nav = [
   { to: '/requests', label: 'Requests', icon: HelpCircle },
   { to: '/feed', label: 'Feed', icon: Sparkles },
 ]
-
-export function BlockMark({ className }: { className?: string }) {
-  return (
-    <span
-      className={cn('grid grid-cols-2 gap-[2px] p-[3px] rounded-[8px] bg-indigo-500', className)}
-      aria-hidden
-    >
-      <span className="size-2 rounded-[2px] bg-amber-300" />
-      <span className="size-2 rounded-[2px] bg-white/80" />
-      <span className="size-2 rounded-[2px] bg-white/80" />
-      <span className="size-2 rounded-[2px] bg-amber-300" />
-    </span>
-  )
-}
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { profile, signOut } = useAuth()
@@ -57,7 +44,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <header className="sticky top-0 z-40 border-b-2 border-line-strong bg-paper/90 backdrop-blur">
         <div className="mx-auto max-w-7xl px-4 h-16 flex items-center gap-3">
           <Link to="/home" className="flex items-center gap-2 shrink-0">
-            <BlockMark />
+            <Logo />
             <span className="font-display font-extrabold text-lg tracking-tight">{APP_NAME}</span>
           </Link>
 

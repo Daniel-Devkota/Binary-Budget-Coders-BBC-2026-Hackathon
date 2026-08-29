@@ -47,7 +47,6 @@ const CATALOG = [
   ['Languages', 'languages', 'Languages', [
     ['Spanish', 'Conversational Spanish from zero to holding your own.'],
     ['Mandarin', 'Tones, characters and everyday conversation.'],
-    ['Japanese', 'Hiragana through to ordering dinner without pointing.'],
     ['French', 'Pronunciation, grammar and real conversation practice.'],
     ['Auslan', 'Australian Sign Language for everyday situations.'],
     ['Arabic', 'Levantine and Modern Standard for beginners.'],
@@ -124,6 +123,7 @@ const CATALOG = [
     ['First Aid', 'CPR, bleeding control and staying calm.'],
     ['Meditation', 'A practice that survives a busy week.'],
     ['Home Coffee', 'Grind, ratio and dialling in an espresso.'],
+    ['Latte Art', 'Steaming, pitcher angle and pouring a heart that holds.'],
   ]],
 ]
 
@@ -456,7 +456,7 @@ const REQUESTS = [
   ['Want to learn to fix my own bike', 'Gears slip and I keep paying someone $80 to fix it in ten minutes. Would rather learn.', 'bike-maintenance'],
   ['Beginner pottery, ideally hands-on', 'Tried a one-off class, loved it, want someone patient for a few sessions.', 'pottery'],
   ['Help me get through first-year statistics', 'I can follow the lectures and then freeze on the assignments. Need someone to work problems with me.', 'statistics'],
-  ['Looking for conversational Japanese practice', 'N5-ish. I do not need grammar drills, I need someone to talk to me slowly.', 'japanese'],
+  ['Someone please show me how to steam milk', 'Fourteen tutorials in and my latte art is still a cloudy puddle. I need a person next to me showing me the pitcher angle.', 'latte-art'],
   ['Teach me to make dumplings properly', 'Mine leak every single time. I have given up diagnosing it alone.', 'dumplings'],
   ['Anyone up for teaching sea kayaking?', 'Nothing on the platform for this yet — happy to travel to wherever the water is.', null],
 ]

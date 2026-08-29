@@ -2,7 +2,7 @@
 
 **Event:** SYNCS Hack 2026 (24 hours, 29–30 Aug 2026)
 **Theme:** *Blocks that make up the world* — connecting underused human blocks: skills, knowledge, time.
-**Working name:** `BLOCKS` *(placeholder — swap the `APP_NAME` constant and logo later)*
+**Product name:** `Skill Up` *(set in the `APP_NAME` constant; mark lives in `src/components/brand/Logo.tsx`)*
 
 ---
 
@@ -524,7 +524,7 @@ while you do the above — nothing stalls waiting on accounts.
 
 Deliberately deferred; defaults chosen so nothing blocks. All are cheap to change later.
 
-- Final app name and logo — placeholder `BLOCKS` until decided
+- ~~Final app name and logo~~ — decided: **Skill Up**, with the two-hands swap mark
 - Session length fixed at 60 minutes; no recurring slots
 - Map pin semantics (teachers vs open sessions vs completed-session heatmap) — decide when the map is unparked
 - Group sessions, ratings, and reviews — explicitly out of scope

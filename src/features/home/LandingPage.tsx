@@ -4,7 +4,7 @@ import { ArrowRight, Repeat2, Coins, Users, ShieldCheck, Sparkles } from 'lucide
 import { useAuth } from '@/stores/authStore'
 import { APP_NAME, TOKEN_CAP } from '@/lib/constants'
 import { Button } from '@/components/ui/Button'
-import { BlockMark } from '@/components/layout/AppShell'
+import { Logo } from '@/components/brand/Logo'
 import { Card } from '@/components/ui/Card'
 
 const BlockHero = lazy(() => import('./BlockHero'))
@@ -60,7 +60,7 @@ export function LandingPage() {
       <header className="border-b-2 border-line-strong">
         <div className="mx-auto max-w-6xl px-4 h-16 flex items-center gap-3">
           <Link to="/" className="flex items-center gap-2">
-            <BlockMark />
+            <Logo />
             <span className="font-display font-extrabold text-lg tracking-tight">{APP_NAME}</span>
           </Link>
           <div className="ml-auto flex items-center gap-2">
@@ -81,12 +81,12 @@ export function LandingPage() {
               <Sparkles className="size-3.5" aria-hidden /> No money. No subscriptions.
             </span>
             <h1 className="text-4xl sm:text-6xl leading-[1.02]">
-              Every person is a block of knowledge.
-              <span className="block text-indigo-500">Most of them sit disconnected.</span>
+              Everyone already knows something worth teaching.
+              <span className="block text-indigo-500">Almost nobody gets to trade it.</span>
             </h1>
             <p className="text-lg text-ink-soft max-w-xl leading-relaxed">
-              {APP_NAME} connects them directly. You teach an hour of what you know, you learn an hour
-              of what you want, and nothing but time changes hands.
+              {APP_NAME} matches you with someone who wants what you know and knows what you want.
+              You teach an hour, you learn an hour, and nothing but time changes hands.
             </p>
             <div className="flex flex-wrap gap-3">
               <Link to="/signup">
@@ -183,7 +183,7 @@ export function LandingPage() {
       <footer className="border-t-2 border-line-strong bg-paper-deep/60">
         <div className="mx-auto max-w-6xl px-4 py-6 flex flex-wrap items-center gap-x-6 gap-y-2 text-xs text-ink-faint">
           <span className="font-semibold text-ink-soft">{APP_NAME}</span>
-          <span>Built for SYNCS Hack 2026 — blocks that make up the world.</span>
+          <span>Built for SYNCS Hack 2026 — everyone teaches, everyone levels up.</span>
         </div>
       </footer>
     </div>

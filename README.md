@@ -1,4 +1,4 @@
-# BLOCKS — trade the skills you have for the skills you want
+# Skill Up — trade the skills you have for the skills you want
 
 **SYNCS Hack 2026 · theme: blocks that make up the world**
 
@@ -10,12 +10,12 @@ the two are a perfect swap for each other)
 
 ## The idea
 
-Every person is a block of knowledge, and most of those blocks sit disconnected. Someone three
+Everyone already knows something worth teaching, and almost nobody gets to trade it. Someone three
 streets away wants the thing you already know how to do, and neither of you has any way to find
 the other — because the only tool we have for trading skills is money, and money is exactly what
 makes it not worth anyone's while for one hour.
 
-BLOCKS connects those blocks directly. You publish what you can teach and what you want to learn.
+Skill Up connects those people directly. You publish what you can teach and what you want to learn.
 Tutors publish open hours. A learner books an hour either with **one token** or with a **swap** —
 I teach you guitar, you teach me Spanish, and nothing but time changes hands. The platform finds
 the perfect swaps for you automatically: the people who teach what you want *and* want what you teach.

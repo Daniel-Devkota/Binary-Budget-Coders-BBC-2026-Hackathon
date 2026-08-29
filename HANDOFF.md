@@ -1,4 +1,4 @@
-# Handoff — BLOCKS (SYNCS Hack 2026)
+# Handoff — Skill Up (SYNCS Hack 2026)
 
 Written at the end of the first build session. Read this plus `IMPLEMENTATION_PLAN.md`
 and you have everything.
