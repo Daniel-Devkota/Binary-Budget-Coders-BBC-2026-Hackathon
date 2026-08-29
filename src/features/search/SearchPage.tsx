@@ -3,7 +3,8 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { Search as SearchIcon, SlidersHorizontal, HelpCircle, X } from 'lucide-react'
 import { useAsync } from '@/lib/useAsync'
 import { fetchCategories, fetchOpenSlots, fetchSkills } from '@/lib/api'
-import { Input, Select } from '@/components/ui/Input'
+import { Input } from '@/components/ui/Input'
+import { SelectMenu } from '@/components/ui/SelectMenu'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { CardSkeleton } from '@/components/ui/Skeleton'
@@ -57,6 +58,22 @@ export function SearchPage() {
     [skills.data, categoryId],
   )
 
+  const categoryOptions = useMemo(
+    () => [
+      { value: '', label: 'All categories' },
+      ...(categories.data ?? []).map((c) => ({ value: c.id, label: c.name })),
+    ],
+    [categories.data],
+  )
+
+  const skillOptions = useMemo(
+    () => [
+      { value: '', label: 'All skills' },
+      ...skillsInCategory.map((s) => ({ value: s.id, label: s.name })),
+    ],
+    [skillsInCategory],
+  )
+
   const results = useMemo(() => {
     const q = query.trim().toLowerCase()
     if (!q) return slots.data ?? []
@@ -91,29 +108,21 @@ export function SearchPage() {
 
         <div className="flex flex-wrap gap-2 items-center">
           <SlidersHorizontal className="size-4 text-ink-faint" aria-hidden />
-          <Select
+          <SelectMenu
             value={categoryId}
-            onChange={(e) => setParam('category', e.target.value)}
-            aria-label="Category"
-            className="w-auto"
-          >
-            <option value="">All categories</option>
-            {(categories.data ?? []).map((c) => (
-              <option key={c.id} value={c.id}>{c.name}</option>
-            ))}
-          </Select>
+            onChange={(v) => setParam('category', v)}
+            options={categoryOptions}
+            label="All categories"
+            searchPlaceholder="Type to filter categories…"
+          />
 
-          <Select
+          <SelectMenu
             value={skillId}
-            onChange={(e) => setParam('skill', e.target.value)}
-            aria-label="Skill"
-            className="w-auto max-w-52"
-          >
-            <option value="">All skills</option>
-            {skillsInCategory.map((s) => (
-              <option key={s.id} value={s.id}>{s.name}</option>
-            ))}
-          </Select>
+            onChange={(v) => setParam('skill', v)}
+            options={skillOptions}
+            label="All skills"
+            searchPlaceholder="Type to filter skills…"
+          />
 
           <div className="flex gap-1 p-1 bg-paper-deep border-2 border-line-strong rounded-[12px]">
             {[
@@ -135,9 +144,12 @@ export function SearchPage() {
             ))}
           </div>
 
-          <Select value={when} onChange={(e) => setParam('when', e.target.value)} aria-label="When" className="w-auto">
-            {WHEN.map((w) => <option key={w.key} value={w.key}>{w.label}</option>)}
-          </Select>
+          <SelectMenu
+            value={when}
+            onChange={(v) => setParam('when', v)}
+            options={WHEN.map((w) => ({ value: w.key, label: w.label }))}
+            label="Any time"
+          />
 
           {activeFilters > 0 && (
             <Button variant="ghost" size="sm" onClick={() => setParams(new URLSearchParams(), { replace: true })}>
