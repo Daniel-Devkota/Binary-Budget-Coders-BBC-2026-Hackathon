@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { useState } from 'react'
 import { useAuth } from '@/stores/authStore'
 import { useAsync } from '@/lib/useAsync'
-import { fetchDiscoverFeed, fetchFeed, fetchFollowing, fetchPendingConsent, setPostConsent } from '@/lib/api'
+import { fetchDiscoverFeed, fetchFeed, fetchPendingConsent, setPostConsent } from '@/lib/api'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
@@ -31,11 +31,7 @@ type PostRow = {
 export function FeedPage() {
   const userId = useAuth((s) => s.userId)!
 
-  const following = useAsync(() => fetchFollowing(userId), [userId])
-  const feed = useAsync(
-    async () => (following.data ? fetchFeed(following.data) : []),
-    [following.data],
-  )
+  const feed = useAsync(() => fetchFeed(userId), [userId])
   const everyone = useAsync(() => fetchDiscoverFeed(), [])
   const pending = useAsync(() => fetchPendingConsent(userId), [userId])
 
@@ -70,7 +66,7 @@ export function FeedPage() {
         </TabList>
 
         <TabPanel value="following" className="pt-5 space-y-4">
-          {following.loading || feed.loading ? (
+          {feed.loading ? (
             <><CardSkeleton /><CardSkeleton /></>
           ) : feed.data?.length ? (
             feed.data.map((p) => <PostCard key={p.id} post={p as unknown as PostRow} />)

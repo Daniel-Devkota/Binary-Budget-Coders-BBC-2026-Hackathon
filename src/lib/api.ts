@@ -344,20 +344,21 @@ const POST_SELECT = `
   skill:skills(*, category:skill_categories(*))
 `
 
-export async function fetchFeed(followingIds: string[], limit = 30) {
-  let qb = supabase
-    .from('posts')
-    .select(POST_SELECT)
-    .eq('status', 'published')
-    .order('created_at', { ascending: false })
-    .limit(limit)
+// Following nobody means an empty feed, not everybody's.
+export async function fetchFeed(userId: string, limit = 30) {
+  const followingIds = await fetchFollowing(userId)
+  if (!followingIds.length) return []
 
-  if (followingIds.length) {
-    qb = qb.or(
-      `author_id.in.(${followingIds.join(',')}),partner_id.in.(${followingIds.join(',')})`,
-    )
-  }
-  return unwrap(await qb)
+  const ids = followingIds.join(',')
+  return unwrap(
+    await supabase
+      .from('posts')
+      .select(POST_SELECT)
+      .eq('status', 'published')
+      .or(`author_id.in.(${ids}),partner_id.in.(${ids})`)
+      .order('created_at', { ascending: false })
+      .limit(limit),
+  )
 }
 
 export async function fetchDiscoverFeed(limit = 30) {
