@@ -1,7 +1,7 @@
 # Handoff — Skill Up (SYNCS Hack 2026)
 
-Start here. This file is the current state of the project; everything else is either the
-original spec or a plan for work that has not happened yet.
+Start here. This file is the current state of the project; everything else is the original spec,
+the submission-facing README, or raw transcripts.
 
 ## The documents, and which are still live
 
@@ -9,14 +9,12 @@ original spec or a plan for work that has not happened yet.
 |---|---|---|
 | `HANDOFF.md` | This file — where things stand, pitfalls, what is left | **Live. Read first.** |
 | `IMPLEMENTATION_PLAN.md` | The original spec: schema, RLS, screens, and the demo script in §9 | **Live**, and still accurate for what shipped. §9 is the demo script |
-| `PLAN-SESSION-CONFIRMATION.md` | Confirm codes, real auto-confirm, photo at the confirming moment | **Not started.** Decisions inside are `PROPOSED`, not signed off |
 | `README.md` | Submission-facing. Contributions table still needs filling in | Live |
 | `demo-video-script.md`, `material/` | Video script and the event's own materials | Live |
 | `previous-chats/` | Raw session transcripts kept for context transfer | Reference only — do not treat as spec |
 
 A plan file is deleted once its work ships, and what still constrains the code moves into
-*Shipped since the first session* below. If you finish `PLAN-SESSION-CONFIRMATION.md`, do the same
-to it.
+*Shipped since the first session* below. There is no open plan file right now.
 
 ---
 
@@ -48,6 +46,9 @@ to it.
 | Landing page with lazy 3D hero and reduced-motion fallback | Working |
 | Mobile layout and drawer | Working at 390px |
 | Globe map: dive to your city, clustered pins, popup → booking | Working, verified in dev and against the production build |
+| Auto-confirm after 48 hours | Working — `pg_cron` every 15 min plus a lazy sweep on every `/bookings` load |
+| Confirm codes for in-person sessions, with QR | Working, verified across two browser contexts |
+| Sessions badge when something is waiting on the learner | Working |
 
 ---
 
@@ -77,6 +78,56 @@ post-confirmation, and nowhere else.
   judgement needed; a token-overlap miss is not that judgement. See *Releasing a stuck skill* below.
 - There is deliberately **no admin surface** — no `is_admin`, no roles, no moderation queue. The
   classifier is the gate and the rare stuck skill is a hand-written `update`.
+
+---
+
+**Session confirmation** (`ebe64eb`, `42ea684`, `9d17dbd`, `adab31d`, `3933238`). Completing a
+session used to take two people making two unprompted return visits, and the card promised an
+auto-confirm that did not exist.
+
+- **`auto_confirm_at` is now read.** `run_auto_confirms()` completes held bookings past their
+  deadline. It takes **no auth check** on purpose — it can only advance bookings that already earned
+  it, so it is safe from cron, from the SQL editor, or unawaited from a page load. `pg_cron` **is**
+  available on this project and schedulable from a CLI migration (`*/15 * * * *`), but the lazy call
+  in `fetchMyBookings` ships anyway: a promise that comes true a quarter of an hour late is no good
+  in a demo.
+- Idempotence is structural, not defensive. The `status = 'held'` predicate sits in the same
+  statement as the update and the ledger insert reads from `returning`, so it can only ever credit
+  rows that statement actually moved.
+- **Confirm codes are in-person only.** Two people on a video call can read six digits aloud, so
+  co-presence is exactly what a code fails to prove there. Online keeps the two-step attestation.
+  `BookingCard` branches on `booking.slot.mode` and every "what happens next" string has two
+  versions. This is **not fraud-proof** and must not be demoed as if it were — a teacher can text the
+  code. What it does is make co-presence the easy path.
+- The code lives in `session_codes` with **RLS on and no policies at all**. That is the intent, not
+  an omission: with no policy nobody reaches it through the API and the only way in or out is the two
+  `security definer` functions. A column on `bookings` would have needed a column-level `SELECT`
+  revoke, and `BOOKING_SELECT` is a bare `*` — pitfall #1 below.
+- **The failed-attempt counter is a sequence, not a column** (`confirm_guard`, migrations
+  `…0005`–`…0007`). This is the one thing in the feature that is not obvious, and it cost two
+  migrations to get right. FR4 wants a wrong code to have no side effects and FR5 wants the wrong
+  code remembered, and those pull in opposite directions: `raise` aborts the RPC transaction and
+  takes any `update` with it. Sequences are non-transactional, so `nextval` survives. `create
+  sequence` does **not** — it is DDL and rolls back too — which is why the counter is armed by
+  `reveal_session_code`, not by the first failure. If you ever move this back to a column, the
+  lockout silently stops working and only a refusal test will tell you.
+- `run_auto_confirms` doubles as the janitor for both, so codes and counters do not accumulate.
+- `confirmed_method` is `code | learner | auto | force`, and **nullable on purpose**: the 47 rows
+  completed before this existed predate the distinction, and backfilling them to `'learner'` would
+  be a guess. Read null as "before this feature" — `BookingCard` renders nothing for it.
+- **All three ledger-writing paths copy the `payment_type = 'token'` branch verbatim.** A swap that
+  credits a token is a real bug and `flow-test.mjs` cannot catch it, because it books with a token.
+  `code-test.mjs` and `auto-confirm-test.mjs` both assert the swap case explicitly.
+- `posts_update` is now `partner_id = auth.uid()` only. The author could previously publish their own
+  pending post with a direct API call; the UI never offered it, but `README.md:39` claims consent is
+  enforced in the database, and now it is.
+- The photo is offered at the confirming moment with *Skip* as a peer of the submit button, and it is
+  **never** a condition of payment. The list reload waits until that dialog closes — reloading sooner
+  moves the booking to *Past*, which unmounts the card and takes the dialog with it.
+- Deliberately **not** built: push/email notifications, GPS proof of attendance (in-person
+  coordinates are jittered ~500m by design and undoing that would trade a real privacy guarantee for
+  a weak signal), ratings, disputes, and a `kind` column on `messages`. `force_complete_booking`
+  stays, still `DEV_TOOLS`-gated — it is the reason the demo does not sit through a real clock.
 
 ---
 
@@ -127,7 +178,16 @@ dialog lands as `status = 'pending'` instead of `approved`, so it stays out of s
    URL at runtime, so no bundler emits the file, and it fails silently with nothing in the console.
    `GlobeMap.tsx` imports it with `?worker&url` and sets `maplibreConfig.WORKER_URL`. Keep that line.
 
-7. **Slot times are authored in Sydney local time** in the seed and converted to UTC. Do not go back
+7. **A `raise` in a definer RPC rolls back its own writes.** If a function has to refuse *and*
+   remember the refusal, the remembering cannot be an `update` — it dies with the exception. See
+   `confirm_guard` and the note in *Session confirmation* above. Sequences survive; `create sequence`
+   does not, because DDL is transactional too.
+
+8. **`create extension pg_cron` lands in `pg_catalog` on this project**, not `extensions`. The
+   Supabase docs snippet with `with schema extensions` is rejected here. `cron.job` is readable and
+   `auto-confirm-bookings` should be in it.
+
+9. **Slot times are authored in Sydney local time** in the seed and converted to UTC. Do not go back
    to bare `now() + interval` or the demo calendar reads as 1am sessions.
 
 ---
@@ -138,10 +198,32 @@ dialog lands as `status = 'pending'` instead of `approved`, so it stays out of s
 npm run build          # typecheck + bundle
 node scripts/smoke.mjs # auth, RLS, masked view, realtime tables, Edge Function
 node scripts/flow-test.mjs   # book → reveal → complete → refund, against the live database
+
+# Session confirmation. The last three need `npm run dev` running.
+node scripts/auto-confirm-test.mjs   # the 48h sweep, idempotence, the swap case
+node scripts/consent-test.mjs        # only the partner may publish a post
+node scripts/code-test.mjs           # the five refusals, then the happy path
+node scripts/inperson-test.mjs       # two browser contexts, teacher shows → learner types
+node scripts/badge-test.mjs          # the Sessions badge appears and clears
+node scripts/qr-test.mjs             # the QR payload and the deep link
 ```
 
-`flow-test.mjs` writes real bookings as Sam. That is fine — it makes the data look lived-in — but be
-aware it is not read-only.
+**Run the confirmation suites one at a time.** They share one fixture namespace (`fixtures.mjs`
+tags its slots and `cleanup()` deletes everything tagged), so two at once and each one's cleanup
+deletes the other's rows mid-run. That is not a product bug and chasing it as one wastes an hour.
+
+`flow-test.mjs` writes real bookings as Sam and **costs him a net token every run**. He hit zero on
+29 Aug and it failed with *"insufficient tokens"* until he was topped up through the ledger. If it
+fails that way again, that is why — and a learner on zero cannot book in the demo either, so it is
+worth checking before a rehearsal.
+
+The confirmation suites clean up after themselves, including putting back the token balances they
+moved: the ledger trigger only fires on insert, so deleting a test ledger row would otherwise leave
+`profiles.token_balance` high.
+
+`scripts/dbq.mjs` runs SQL through `supabase db query -f`, which is how the tests reach states no
+client API can produce — a held booking already past its deadline, a session that started 90 minutes
+ago. It is test scaffolding; nothing in `src/` imports it.
 
 ---
 
@@ -154,6 +236,16 @@ aware it is not read-only.
    caveat: step 6 says "force-complete, teacher earns a token", but the demo booking is a **swap**,
    and swaps correctly move no tokens. Either say "no tokens move, that is the point", or book a
    token session first and force-complete that one. Decide which and rehearse it.
+
+   There is now a better option for step 6: book a **token** session on an **in-person** slot, and
+   confirm it with the code. The teacher's screen shows six digits and a QR, the learner scans or
+   types, and the token moves in one action with no `held` step in between. It films better than
+   force-complete and it is the real path rather than a shortcut. It needs the session to have
+   started — the reveal button is gated on that — so seed the slot in the recent past.
+   Do **not** claim it is fraud-proof; the honest line is that it makes confirming in person the
+   easy path.
+
+   Sam needs a non-zero token balance for any of this. Check before you rehearse.
 3. **Fill in the contributions table** at the bottom of `README.md` — Devpost scores it.
 4. **Record the 3-minute video.**
 5. **Keep pushing, and make the repo public.** `origin` is
@@ -173,11 +265,8 @@ aware it is not read-only.
   keyboard only.
 - **Real photos in the feed.** Everything is generated block art right now, which is honest and looks
   designed, but one or two real consented photos would sell the social feature harder.
-- **Session confirmation** — see `PLAN-SESSION-CONFIRMATION.md`. Its Phase 1 is the standout: the
-  card promises "Auto-confirms in 48 hours" and nothing reads `auto_confirm_at`, so a booking left in
-  `held` never pays the teacher. That is a false statement in the UI, and it is a server-only fix.
-- The rest of the P2/parked list in the plan: group sessions, ratings, recurring slots. (The map has
-  since shipped.)
+- The rest of the P2/parked list in the plan: group sessions, ratings, recurring slots. (The map and
+  session confirmation have since shipped.)
 
 ---
 
@@ -211,7 +300,6 @@ the skill at post time.
 ```
 HANDOFF.md               this file — start here
 IMPLEMENTATION_PLAN.md   the original plan — still accurate; demo script in §9
-PLAN-SESSION-CONFIRMATION.md   confirm codes + real auto-confirm — not started
 README.md                submission-ready; contributions table needs filling in
 src/
   components/ui/         button, card, dialog, toast, tabs … the block design system
@@ -223,7 +311,8 @@ src/
 supabase/
   migrations/            schema, RLS, RPCs, storage, generated seed — 9 files, all applied
   functions/             classify-request (Deno, deployed)
-scripts/                 gen-seed.mjs, smoke.mjs, flow-test.mjs
+scripts/                 gen-seed.mjs, smoke.mjs, flow-test.mjs, the confirmation suites
+                         (dbq.mjs and fixtures.mjs are their shared scaffolding)
 ```
 
 Design tokens live in `src/index.css` under `@theme` — palette, type, the `.block-card` primitive.
