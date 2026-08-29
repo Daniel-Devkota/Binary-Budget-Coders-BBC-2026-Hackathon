@@ -11,6 +11,7 @@ import { Avatar } from '@/components/ui/Avatar'
 import { TokenChip } from '@/components/ui/TokenChip'
 import { Button } from '@/components/ui/Button'
 import { useUnreadCount } from '@/features/messaging/useUnread'
+import { useRequestActivity } from '@/features/requests/useRequestActivity'
 import { Logo } from '@/components/brand/Logo'
 import { Menu, MenuTrigger, MenuContent, MenuItem, MenuLabel, MenuSeparator } from '@/components/ui/Menu'
 
@@ -30,6 +31,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const location = useLocation()
   const [open, setOpen] = useState(false)
   const unread = useUnreadCount()
+  const requestActivity = useRequestActivity()
 
   // Navigating anywhere closes the mobile drawer.
   useEffect(() => { setOpen(false) }, [location.pathname])
@@ -69,6 +71,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 {to === '/messages' && unread > 0 && (
                   <span className="ml-0.5 grid place-items-center min-w-4 h-4 px-1 rounded-full bg-clay-500 text-white text-[10px] font-bold">
                     {unread > 9 ? '9+' : unread}
+                  </span>
+                )}
+                {to === '/requests' && requestActivity > 0 && (
+                  <span className="ml-0.5 grid place-items-center min-w-4 h-4 px-1 rounded-full bg-clay-500 text-white text-[10px] font-bold">
+                    {requestActivity > 9 ? '9+' : requestActivity}
                   </span>
                 )}
               </NavLink>

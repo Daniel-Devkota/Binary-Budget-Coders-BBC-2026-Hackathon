@@ -423,6 +423,8 @@ export type Database = {
           id: string
           message: string | null
           request_id: string
+          responded_at: string | null
+          status: string
           teacher_id: string
         }
         Insert: {
@@ -430,6 +432,8 @@ export type Database = {
           id?: string
           message?: string | null
           request_id: string
+          responded_at?: string | null
+          status?: string
           teacher_id: string
         }
         Update: {
@@ -437,6 +441,8 @@ export type Database = {
           id?: string
           message?: string | null
           request_id?: string
+          responded_at?: string | null
+          status?: string
           teacher_id?: string
         }
         Relationships: [
@@ -803,6 +809,10 @@ export type Database = {
       }
     }
     Functions: {
+      answer_request_offer: {
+        Args: { p_accept: boolean; p_response_id: string }
+        Returns: string
+      }
       book_slot_with_token: { Args: { p_slot_id: string }; Returns: string }
       cancel_booking: { Args: { p_booking_id: string }; Returns: undefined }
       claim_weekly_grant: { Args: never; Returns: number }

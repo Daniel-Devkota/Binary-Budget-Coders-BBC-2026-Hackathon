@@ -8,6 +8,9 @@ export type Verdict = {
   source: 'ai' | 'heuristic'
 }
 
+/** Past this, the local heuristic answers instead. Groq replies in about a second. */
+const CLASSIFY_TIMEOUT_MS = 10_000
+
 /**
  * Deduping a request against the catalog. The Edge Function does it properly
  * with a model; if it is unavailable — no key, no deploy, hackathon wifi — we
@@ -19,10 +22,20 @@ export async function classifyRequest(
   skills: SkillWithCategory[],
 ): Promise<Verdict> {
   try {
-    const { data, error } = await supabase.functions.invoke('classify-request', {
-      body: { title, description, skills: skills.map((s) => ({ id: s.id, name: s.name })) },
+    const invoked = supabase.functions.invoke('classify-request', {
+      body: { mode: 'classify', title, description, skills: skills.map((s) => ({ id: s.id, name: s.name })) },
     })
-    if (!error && data?.reasoning) {
+    // A slow model must never leave someone staring at a spinning post button:
+    // past the deadline we stop waiting and answer locally.
+    const { data, error } = await Promise.race([
+      invoked,
+      new Promise<{ data: null; error: null }>((resolve) =>
+        setTimeout(() => resolve({ data: null, error: null }), CLASSIFY_TIMEOUT_MS),
+      ),
+    ])
+    // The function answers even when the model is unreachable, so it is
+    // `source`, not the mere presence of a reply, that says the AI ran.
+    if (!error && data?.source === 'ai') {
       const match = skills.find((s) => s.id === data.matchedSkillId) ?? null
       return {
         matchedSkillId: match?.id ?? null,
@@ -35,6 +48,46 @@ export async function classifyRequest(
     // fall through
   }
   return heuristic(title, description, skills)
+}
+
+export type ProposedSkill = {
+  skillId: string
+  /** 'approved' means it is live in the catalog now; 'pending' means the AI was down. */
+  status: 'approved' | 'pending'
+  /** The re-run dedupe found an existing skill, so nothing new was created. */
+  matched: boolean
+  reasoning: string
+}
+
+/**
+ * Creating the catalog row is the Edge Function's job, not ours. The client
+ * may only insert a skill as `pending` (`skills_insert` policy), and it is in
+ * no position to assert that the AI cleared it — so the function verifies the
+ * caller's JWT, re-runs the dedupe against the final name, and writes with the
+ * service role.
+ */
+export async function proposeSkill(input: {
+  name: string
+  categoryId: string
+  title: string
+  description: string
+  skills: SkillWithCategory[]
+}): Promise<ProposedSkill> {
+  const { data, error } = await supabase.functions.invoke('classify-request', {
+    body: {
+      mode: 'create',
+      name: input.name,
+      categoryId: input.categoryId,
+      title: input.title,
+      description: input.description,
+      skills: input.skills.map((s) => ({ id: s.id, name: s.name })),
+    },
+  })
+  // functions.invoke reports a non-2xx as a generic FunctionsHttpError, so the
+  // useful message is in the body rather than in `error`.
+  if (data?.error) throw new Error(data.error)
+  if (error) throw error
+  return data as ProposedSkill
 }
 
 const STOP = new Set([
@@ -73,7 +126,7 @@ function heuristic(title: string, description: string, skills: SkillWithCategory
   return {
     matchedSkillId: null,
     matchedSkillName: null,
-    reasoning: 'Nothing in the catalog matches this yet, so it is posted as a new skill for review.',
+    reasoning: 'Nothing in the catalog matches this yet, so you can name it yourself.',
     source: 'heuristic',
   }
 }

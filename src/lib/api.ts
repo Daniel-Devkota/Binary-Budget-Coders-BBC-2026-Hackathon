@@ -54,7 +54,14 @@ export async function fetchSkills() {
 
 export async function fetchSkillBySlug(slug: string) {
   return unwrap(
-    await supabase.from('skills').select('*, category:skill_categories(*)').eq('slug', slug).maybeSingle(),
+    await supabase
+      .from('skills')
+      .select('*, category:skill_categories(*)')
+      // A skill still waiting on approval is not in the catalog yet, so it has
+      // no page either — same filter as fetchSkills.
+      .eq('status', 'approved')
+      .eq('slug', slug)
+      .maybeSingle(),
   ) as SkillWithCategory | null
 }
 
@@ -462,6 +469,11 @@ export async function fetchRequests(opts: {
   skillIds?: string[]
   /** Drop your own asks — you cannot offer to teach yourself. */
   excludeRequesterId?: string
+  /**
+   * Your own asks, whatever state they are in. Browsing only ever shows live
+   * asks; My asks has to keep showing one after you have accepted an offer on it.
+   */
+  ownerId?: string
   limit?: number
 } = {}) {
   if (opts.skillIds?.length === 0) return []
@@ -469,14 +481,45 @@ export async function fetchRequests(opts: {
   let qb = supabase
     .from('skill_requests')
     .select(REQUEST_SELECT)
-    .in('status', ['open', 'pending_review'])
     .order('created_at', { ascending: false })
+
+  if (opts.ownerId) qb = qb.eq('requester_id', opts.ownerId)
+  else qb = qb.in('status', ['open', 'pending_review'])
 
   if (opts.skillIds?.length) qb = qb.in('resolved_skill_id', opts.skillIds)
   if (opts.excludeRequesterId) qb = qb.neq('requester_id', opts.excludeRequesterId)
   if (opts.limit) qb = qb.limit(opts.limit)
 
   return unwrap(await qb)
+}
+
+/**
+ * Every offer this teacher has made and what became of it. Deliberately not
+ * filtered by the parent request's status: the whole point is that an offer
+ * stays visible after the ask is fulfilled or withdrawn.
+ */
+export async function fetchMyResponses(userId: string) {
+  return unwrap(
+    await supabase
+      .from('request_responses')
+      .select(`
+        *,
+        request:skill_requests(
+          *,
+          requester:profiles(*),
+          resolved_skill:skills(*, category:skill_categories(*))
+        )
+      `)
+      .eq('teacher_id', userId)
+      .order('created_at', { ascending: false }),
+  )
+}
+
+/** Accept or decline an offer on your own request. Returns a conversation id on accept. */
+export async function answerOffer(responseId: string, accept: boolean) {
+  return unwrap(
+    await supabase.rpc('answer_request_offer', { p_response_id: responseId, p_accept: accept }),
+  ) as string | null
 }
 
 export async function createRequest(input: {

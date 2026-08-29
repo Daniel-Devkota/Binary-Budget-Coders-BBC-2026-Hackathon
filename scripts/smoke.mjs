@@ -74,9 +74,10 @@ await step('map: slots_in_bounds returns jittered pins and city clusters', async
 await step('classify-request edge function', async () => {
   const skills = must(await sb.from('skills').select('id, name'))
   const { data, error } = await sb.functions.invoke('classify-request', {
-    body: { title: 'Want to learn to fix my own bike', description: 'Gears slip constantly.', skills },
+    body: { mode: 'classify', title: 'Want to learn to fix my own bike', description: 'Gears slip constantly.', skills },
   })
   if (error) throw error
   const match = skills.find((s) => s.id === data.matchedSkillId)
-  return { matched: match?.name ?? null, reasoning: data.reasoning }
+  // source tells you whether Groq actually answered or the key is missing.
+  return { source: data.source, matched: match?.name ?? null, reasoning: data.reasoning }
 })

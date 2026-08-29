@@ -38,15 +38,20 @@ and you have everything.
 
 ## The one thing that still needs a person
 
-**Set the Gemini key** so skill-request dedupe uses the model instead of the local heuristic:
+**Set the Groq key** so skill-request dedupe uses the model instead of the local heuristic:
 
 ```bash
-npx supabase secrets set GEMINI_API_KEY=<key from aistudio.google.com>
+npx supabase secrets set GROQ_API_KEY=<key from console.groq.com>
+npx supabase functions deploy classify-request
 ```
 
-Nothing breaks without it — `scripts/smoke.mjs` currently reports
-*"Catalog matching is running without the AI service configured"*, and the client falls back to
-token overlap. But it is a visible AI feature for judging, and it is one command.
+The function talks to Groq (`llama-3.3-70b-versatile`); the Gemini path is gone. Nothing breaks
+without the key — `scripts/smoke.mjs` reports *"Catalog matching is running without the AI service
+configured"*, and the client falls back to token overlap. But it is a visible AI feature for judging.
+
+One consequence worth knowing: with the key missing, a brand-new skill proposed from the request
+dialog lands as `status = 'pending'` instead of `approved`, so it stays out of search. See
+*Releasing a stuck skill* below.
 
 ---
 
@@ -126,6 +131,31 @@ aware it is not read-only.
 - **Real photos in the feed.** Everything is generated block art right now, which is honest and looks
   designed, but one or two real consented photos would sell the social feature harder.
 - The whole P2/parked list in the plan: map, group sessions, ratings, recurring slots.
+
+---
+
+## Releasing a stuck skill
+
+When someone posts a request that matches nothing, the Edge Function creates the skill for them. If
+the AI answered, the skill goes live immediately. If the AI was unreachable, it lands `pending` and
+is invisible in search, profile pickers and the request combobox — a token-overlap miss is not the
+judgement that earns a place in the catalog.
+
+There is deliberately no admin UI. Look at what is waiting, then release it by hand:
+
+```sql
+select s.id, s.name, s.slug, c.name as category, s.created_at
+  from public.skills s
+  join public.skill_categories c on c.id = s.category_id
+ where s.status = 'pending'
+ order by s.created_at desc;
+
+-- release one, once you have read it
+update public.skills set status = 'approved' where slug = '<slug>';
+```
+
+Run it in the Supabase SQL editor. This should be a rare path: the normal case is the AI clearing
+the skill at post time.
 
 ---
 
