@@ -31,7 +31,11 @@ export type BookingWithContext = Booking & {
   skill: SkillWithCategory
   teacher: Profile
   learner: Profile
-  slot: Slot
+  /** Base-table read: the private columns are absent by design. */
+  slot: Omit<Slot, 'meeting_url' | 'location_text'>
+  /** Merged in from slots_public — null unless the viewer has earned them. */
+  meeting_url?: string | null
+  location_text?: string | null
 }
 
 export type SwapProposalWithContext = SwapProposal & {

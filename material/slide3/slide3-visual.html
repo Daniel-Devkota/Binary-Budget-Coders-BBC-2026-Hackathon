@@ -1,0 +1,276 @@
+<title>Skill Swap Storyboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Inter:wght@400;500;600;700&display=swap">
+<style>
+  :root{
+    --paper:#FBF7F0; --paper-deep:#F2EBDF; --card:#FFFDF9;
+    --ink:#1A1626; --ink-soft:#4A4459; --ink-faint:#7C7590;
+    --indigo:#4F42C0; --indigo-soft:#EEEDFB; --indigo-line:#B6B0ED;
+    --amber:#C97F10; --amber-soft:#FEF6E7; --amber-line:#F2B44E;
+    --moss:#2E7D4F; --moss-soft:#DCEFE1;
+    --line:#E3DACB; --line-strong:#CFC3AE;
+    --stage:#F2EBDF;
+    --shadow:3px 3px 0 0 var(--line-strong);
+    --shadow-lg:6px 6px 0 0 var(--line-strong);
+    --font-display:"Bricolage Grotesque","Trebuchet MS",ui-sans-serif,system-ui,sans-serif;
+    --font-sans:"Inter",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#151320; --paper-deep:#1D1A2B; --card:#231F33;
+      --ink:#F0ECF7; --ink-soft:#BDB6CE; --ink-faint:#8F87A3;
+      --indigo:#8F86E1; --indigo-soft:#241F45; --indigo-line:#4F42C0;
+      --amber:#F2B44E; --amber-soft:#3A2A11; --amber-line:#C97F10;
+      --moss:#7CC79A; --moss-soft:#16321F;
+      --line:#332E47; --line-strong:#4A4362;
+      --stage:#1D1A2B;
+    }
+  }
+  :root[data-theme="dark"]{
+      --paper:#151320; --paper-deep:#1D1A2B; --card:#231F33;
+      --ink:#F0ECF7; --ink-soft:#BDB6CE; --ink-faint:#8F87A3;
+      --indigo:#8F86E1; --indigo-soft:#241F45; --indigo-line:#4F42C0;
+      --amber:#F2B44E; --amber-soft:#3A2A11; --amber-line:#C97F10;
+      --moss:#7CC79A; --moss-soft:#16321F;
+      --line:#332E47; --line-strong:#4A4362;
+      --stage:#1D1A2B;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--font-sans);
+    -webkit-font-smoothing:antialiased}
+  .page{max-width:1000px;margin:0 auto;padding:40px 24px 80px;display:flex;flex-direction:column;gap:28px}
+  .eyebrow{font:700 11px/1 var(--font-sans);letter-spacing:.16em;text-transform:uppercase;color:var(--amber);margin:0}
+  h1{font-family:var(--font-display);font-weight:800;font-size:clamp(26px,4.4vw,38px);letter-spacing:-.02em;
+    line-height:1.05;margin:8px 0 6px;text-wrap:balance}
+  .sub{margin:0;color:var(--ink-soft);font-size:15px;max-width:62ch}
+
+  /* ── the 16:9 stage: this is the actual slide ───────────────────────── */
+  .stage-wrap{position:relative}
+  .stage{position:relative;aspect-ratio:16/9;background:var(--stage);border:2px solid var(--ink);
+    border-radius:16px;overflow:hidden;box-shadow:var(--shadow-lg);
+    container-type:inline-size}
+  .grid-bg{position:absolute;inset:0;opacity:.5;
+    background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);
+    background-size:34px 34px}
+
+  /* everything inside the stage scales with stage width via cqw units */
+  .logo{position:absolute;top:5cqw;left:50%;transform:translateX(-50%) translateY(1.5cqw);
+    display:flex;align-items:center;gap:1.4cqw;opacity:0;transition:opacity .5s ease,transform .5s ease}
+  .stage[data-beat] .logo{opacity:1;transform:translateX(-50%) translateY(0)}
+  .stud{width:3.4cqw;height:3.4cqw;border-radius:.8cqw;background:var(--indigo);
+    box-shadow:.5cqw .5cqw 0 0 var(--amber-line);flex:none}
+  .wordmark{font-family:var(--font-display);font-weight:800;font-size:3.2cqw;letter-spacing:-.02em}
+  .tagline{position:absolute;top:10.5cqw;left:50%;transform:translateX(-50%);
+    font-size:1.35cqw;letter-spacing:.18em;text-transform:uppercase;font-weight:700;color:var(--ink-faint);
+    opacity:0;transition:opacity .5s ease .15s;white-space:nowrap}
+  .stage[data-beat] .tagline{opacity:1}
+
+  .cards{position:absolute;left:0;right:0;top:52%;transform:translateY(-50%);
+    display:flex;align-items:center;justify-content:center;gap:6cqw}
+
+  .card{position:relative;width:27cqw;background:var(--card);border:.28cqw solid var(--ink);
+    border-radius:1.4cqw;padding:1.8cqw;box-shadow:.55cqw .55cqw 0 0 var(--ink);
+    transition:transform .85s cubic-bezier(.22,1,.36,1),box-shadow .3s ease;}
+  .card.left{transform:translateX(-8cqw) rotate(-3deg)}
+  .card.right{transform:translateX(8cqw) rotate(3deg)}
+  .stage[data-beat="0"] .card.left{transform:translateX(-52cqw) rotate(-8deg)}
+  .stage[data-beat="0"] .card.right{transform:translateX(52cqw) rotate(8deg)}
+  .stage[data-beat="3"] .card.left,
+  .stage[data-beat="4"] .card.left{transform:translateX(-1cqw) rotate(-1.5deg)}
+  .stage[data-beat="3"] .card.right,
+  .stage[data-beat="4"] .card.right{transform:translateX(1cqw) rotate(1.5deg)}
+
+  .who{display:flex;align-items:center;gap:1.1cqw;margin-bottom:1.4cqw}
+  .avatar{width:4.6cqw;height:4.6cqw;border-radius:1cqw;flex:none;display:grid;place-items:center;
+    font-family:var(--font-display);font-weight:800;font-size:2.2cqw;color:#fff}
+  .card.left .avatar{background:var(--indigo)}
+  .card.right .avatar{background:var(--moss)}
+  .name{font-family:var(--font-display);font-weight:600;font-size:2cqw;line-height:1.1;letter-spacing:-.01em}
+  .dist{font-size:1.2cqw;color:var(--ink-faint);font-weight:500;margin-top:.25cqw}
+
+  .row{border-radius:.9cqw;padding:.9cqw 1.1cqw;margin-top:.8cqw;border:.18cqw solid transparent}
+  .row .k{font-size:1.05cqw;letter-spacing:.14em;text-transform:uppercase;font-weight:700;opacity:.85}
+  .row .v{font-family:var(--font-display);font-weight:600;font-size:1.85cqw;margin-top:.15cqw;letter-spacing:-.01em}
+  .teach{background:var(--amber-soft);border-color:var(--amber-line);color:var(--amber)}
+  .teach .v{color:var(--ink)}
+  .learn{background:var(--indigo-soft);border-color:var(--indigo-line);color:var(--indigo)}
+  .learn .v{color:var(--ink)}
+
+  /* crossing connectors */
+  .wires{position:absolute;inset:0;pointer-events:none;opacity:0;transition:opacity .3s ease}
+  .stage[data-beat="2"] .wires{opacity:1}
+  .wire{fill:none;stroke-width:3.2;stroke-linecap:round;
+    stroke-dasharray:420;stroke-dashoffset:420;transition:stroke-dashoffset .8s ease .1s}
+  .stage[data-beat="2"] .wire{stroke-dashoffset:0}
+  .wire-a{stroke:var(--amber-line)}
+  .wire-b{stroke:var(--indigo)}
+  .wire-dot{fill:var(--card);stroke-width:3}
+
+  .swaptag{position:absolute;left:50%;top:52%;transform:translate(-50%,-50%) scale(.6);
+    background:var(--card);border:.28cqw solid var(--ink);border-radius:50%;
+    width:9cqw;height:9cqw;display:grid;place-items:center;gap:0;
+    box-shadow:.4cqw .4cqw 0 0 var(--ink);opacity:0;transition:opacity .35s ease,transform .45s cubic-bezier(.34,1.56,.64,1)}
+  .stage[data-beat="3"] .swaptag,.stage[data-beat="4"] .swaptag{opacity:1;transform:translate(-50%,-50%) scale(1)}
+  .swaptag span{font-size:3.6cqw;line-height:1}
+
+  .verdict{position:absolute;left:50%;bottom:5.5cqw;transform:translateX(-50%) translateY(1.2cqw);
+    display:flex;align-items:center;gap:1cqw;background:var(--moss-soft);color:var(--moss);
+    border:.24cqw solid var(--moss);border-radius:99px;padding:.9cqw 2.2cqw;
+    font-family:var(--font-display);font-weight:800;font-size:2.1cqw;letter-spacing:-.01em;
+    opacity:0;transition:opacity .4s ease .12s,transform .4s ease .12s;white-space:nowrap}
+  .stage[data-beat="4"] .verdict{opacity:1;transform:translateX(-50%) translateY(0)}
+  .verdict small{font-family:var(--font-sans);font-weight:600;font-size:1.25cqw;letter-spacing:.02em;color:var(--ink-soft)}
+
+  @media (prefers-reduced-motion: reduce){
+    .card,.wire,.swaptag,.verdict,.logo,.tagline,.wires{transition-duration:.01ms !important}
+  }
+
+  /* ── controls ───────────────────────────────────────────────────────── */
+  .controls{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+  button{font-family:var(--font-sans);font-weight:600;font-size:13px;color:var(--ink);
+    background:var(--card);border:2px solid var(--ink);border-radius:10px;padding:9px 14px;
+    cursor:pointer;box-shadow:2px 2px 0 0 var(--ink);transition:transform .08s ease,box-shadow .08s ease}
+  button:hover{transform:translate(1px,1px);box-shadow:1px 1px 0 0 var(--ink)}
+  button:active{transform:translate(2px,2px);box-shadow:none}
+  button[aria-pressed="true"]{background:var(--ink);color:var(--paper)}
+  button:focus-visible{outline:3px solid var(--amber-line);outline-offset:2px}
+  .play{background:var(--indigo);color:#fff;border-color:var(--ink)}
+  .spacer{flex:1}
+  .hint{color:var(--ink-faint);font-size:13px}
+
+  /* ── beat notes ─────────────────────────────────────────────────────── */
+  .beats{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin:0;padding:0;list-style:none}
+  .beats li{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 15px}
+  .beats li[data-on="true"]{border-color:var(--ink);box-shadow:var(--shadow)}
+  .beats .t{font:700 10px/1 var(--font-sans);letter-spacing:.16em;text-transform:uppercase;color:var(--amber);
+    font-variant-numeric:tabular-nums}
+  .beats .h{font-family:var(--font-display);font-weight:600;font-size:16px;margin:6px 0 4px}
+  .beats p{margin:0;font-size:13px;line-height:1.55;color:var(--ink-soft)}
+  /* still-frame capture mode: ?beat=N&still=1 renders just the slide, full bleed */
+  body.still{background:var(--stage)}
+  body.still .page{padding:0;max-width:none;gap:0}
+  body.still header,body.still .controls,body.still .beats,body.still .foot{display:none}
+  body.still .stage{border:0;border-radius:0;box-shadow:none}
+  body.still *{transition:none !important}
+
+  .foot{border-top:1px solid var(--line);padding-top:16px;color:var(--ink-faint);font-size:13px;line-height:1.6}
+</style>
+
+<div class="page">
+  <header>
+    <p class="eyebrow">Slide 3 · 0:45 – 1:05</p>
+    <h1>The Skill Swap</h1>
+    <p class="sub">Storyboard for the core-mechanic visual: two neighbours, opposite lists, one swap. Press play, or step through the four beats to see exactly what lands on screen at each moment of the voiceover.</p>
+  </header>
+
+  <div class="stage-wrap">
+    <div class="stage" id="stage" data-beat="0">
+      <div class="grid-bg"></div>
+
+      <div class="logo"><div class="stud"></div><div class="wordmark">SkillUp</div></div>
+      <div class="tagline">Teach one thing · Learn another</div>
+
+      <svg class="wires" viewBox="0 0 1600 900" preserveAspectRatio="none" aria-hidden="true">
+        <path class="wire wire-a" d="M636 458 C 770 420, 840 540, 966 574"></path>
+        <path class="wire wire-b" d="M636 560 C 770 600, 840 500, 966 470"></path>
+        <circle class="wire-dot" cx="636" cy="458" r="8" stroke="#C97F10"></circle>
+        <circle class="wire-dot" cx="966" cy="574" r="8" stroke="#C97F10"></circle>
+        <circle class="wire-dot" cx="636" cy="560" r="8" stroke="#4F42C0"></circle>
+        <circle class="wire-dot" cx="966" cy="470" r="8" stroke="#4F42C0"></circle>
+      </svg>
+
+      <div class="cards">
+        <article class="card left">
+          <div class="who">
+            <div class="avatar">M</div>
+            <div>
+              <div class="name">Maya</div>
+              <div class="dist">1.2 km away · Newtown</div>
+            </div>
+          </div>
+          <div class="row teach"><div class="k">Can teach</div><div class="v">Guitar</div></div>
+          <div class="row learn"><div class="k">Wants to learn</div><div class="v">Arabic cooking</div></div>
+        </article>
+
+        <article class="card right">
+          <div class="who">
+            <div class="avatar">O</div>
+            <div>
+              <div class="name">Omar</div>
+              <div class="dist">2.4 km away · Erskineville</div>
+            </div>
+          </div>
+          <div class="row teach"><div class="k">Can teach</div><div class="v">Arabic cooking</div></div>
+          <div class="row learn"><div class="k">Wants to learn</div><div class="v">Guitar</div></div>
+        </article>
+      </div>
+
+      <div class="swaptag"><span>⇄</span></div>
+      <div class="verdict">It&rsquo;s a swap <small>· both ways, no money</small></div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <button class="play" id="play" type="button">▶ Play the sequence</button>
+    <button type="button" data-jump="0" aria-pressed="false">1 · Logo</button>
+    <button type="button" data-jump="1" aria-pressed="false">2 · Two lists</button>
+    <button type="button" data-jump="2" aria-pressed="false">3 · Wires cross</button>
+    <button type="button" data-jump="3" aria-pressed="false">4 · Snap together</button>
+    <button type="button" data-jump="4" aria-pressed="false">5 · Swap</button>
+    <span class="spacer"></span>
+    <span class="hint">← → arrow keys step beats</span>
+  </div>
+
+  <ol class="beats" id="beatnotes">
+    <li data-b="0"><div class="t">0:45</div><div class="h">Logo lands</div><p>Wordmark and stud mark on the grid ground. Cards are still off-frame.</p></li>
+    <li data-b="1"><div class="t">0:48</div><div class="h">Two profile cards</div><p>Maya and Omar slide in from opposite edges, tilted apart. Each shows one amber &ldquo;can teach&rdquo; row and one indigo &ldquo;wants to learn&rdquo; row.</p></li>
+    <li data-b="2"><div class="t">0:53</div><div class="h">The lists cross</div><p>Two wires draw across the gap: Maya&rsquo;s guitar into Omar&rsquo;s learn row, Omar&rsquo;s cooking into Maya&rsquo;s. Amber out, indigo in.</p></li>
+    <li data-b="3"><div class="t">0:58</div><div class="h">Cards snap together</div><p>The pair pulls to centre and straightens; the swap badge pops between them like a stud clicking in.</p></li>
+    <li data-b="4"><div class="t">1:02</div><div class="h">Hold on the swap</div><p>Wires dim, &ldquo;It&rsquo;s a swap&rdquo; holds under the pair through the last line about real connection.</p></li>
+  </ol>
+
+  <p class="foot">Timings are the visual&rsquo;s own; they sit under the slide-3 voiceover and can stretch or compress with the read. Names, suburbs and skills are placeholders &mdash; swap in whatever pair you use in the recorded demo so the storyboard matches the screen capture that follows.</p>
+</div>
+
+<script>
+  const stage = document.getElementById('stage');
+  const jumps = [...document.querySelectorAll('[data-jump]')];
+  const notes = [...document.querySelectorAll('#beatnotes li')];
+  const playBtn = document.getElementById('play');
+  let timers = [];
+
+  function setBeat(n){
+    stage.dataset.beat = String(n);
+    jumps.forEach(b => b.setAttribute('aria-pressed', String(+b.dataset.jump === n)));
+    notes.forEach(li => li.dataset.on = String(+li.dataset.b === n));
+  }
+  function clearTimers(){ timers.forEach(clearTimeout); timers = []; }
+  function play(){
+    clearTimers();
+    setBeat(0);
+    [[1, 900], [2, 3200], [3, 5400], [4, 7000]].forEach(([beat, at]) => {
+      timers.push(setTimeout(() => setBeat(beat), at));
+    });
+  }
+
+  playBtn.addEventListener('click', play);
+  jumps.forEach(b => b.addEventListener('click', () => { clearTimers(); setBeat(+b.dataset.jump); }));
+  document.addEventListener('keydown', e => {
+    if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+    clearTimers();
+    const cur = +stage.dataset.beat;
+    setBeat(Math.max(0, Math.min(4, cur + (e.key === 'ArrowRight' ? 1 : -1))));
+  });
+
+  const params = new URLSearchParams(location.search);
+  const theme = params.get('theme');
+  if (theme === 'light' || theme === 'dark') document.documentElement.dataset.theme = theme;
+  const still = params.get('beat');
+  if (still !== null) {
+    if (params.get('still') === '1') document.body.classList.add('still');
+    setBeat(+still);
+  } else {
+    setTimeout(play, 400);
+  }
+</script>
