@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { Search as SearchIcon, SlidersHorizontal, HelpCircle, X } from 'lucide-react'
+import { Search as SearchIcon, SlidersHorizontal, HelpCircle, MapPin, X } from 'lucide-react'
 import { useAsync } from '@/lib/useAsync'
 import { fetchCategories, fetchOpenSlots, fetchSkills } from '@/lib/api'
 import { Input } from '@/components/ui/Input'
@@ -89,9 +89,16 @@ export function SearchPage() {
 
   return (
     <div className="space-y-6">
-      <div className="space-y-1">
-        <h1 className="text-3xl sm:text-4xl">Discover</h1>
-        <p className="text-ink-soft">Every open hour on the platform. Pay a token, or offer a swap.</p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="space-y-1">
+          <h1 className="text-3xl sm:text-4xl">Discover</h1>
+          <p className="text-ink-soft">Every open hour on the platform. Pay a token, or offer a swap.</p>
+        </div>
+        <Link to="/map">
+          <Button variant="outline">
+            <MapPin className="size-4" aria-hidden /> View on map
+          </Button>
+        </Link>
       </div>
 
       <div className="block-card p-4 space-y-3">

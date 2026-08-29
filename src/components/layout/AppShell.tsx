@@ -17,6 +17,7 @@ import { Menu, MenuTrigger, MenuContent, MenuItem, MenuLabel, MenuSeparator } fr
 const nav = [
   { to: '/home', label: 'Home', icon: Home },
   { to: '/search', label: 'Discover', icon: Search },
+  { to: '/map', label: 'Map', icon: MapPin },
   { to: '/bookings', label: 'Sessions', icon: CalendarDays },
   { to: '/messages', label: 'Messages', icon: MessagesSquare },
   { to: '/requests', label: 'Requests', icon: HelpCircle },
@@ -125,7 +126,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               { to: '/profile?tab=skills', label: 'Your skills', icon: GraduationCap },
               { to: '/profile?tab=slots', label: 'Your availability', icon: CalendarPlus },
               { to: '/profile?tab=about', label: 'Your profile', icon: User },
-              { to: '/map', label: 'Map', icon: MapPin },
             ].map(
               ({ to, label, icon: Icon }) => (
                 <NavLink
@@ -166,7 +166,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <div className="mx-auto max-w-7xl px-4 py-6 flex flex-wrap items-center gap-x-6 gap-y-2 text-xs text-ink-faint">
           <span className="font-semibold text-ink-soft">{APP_NAME}</span>
           <span>Built for SYNCS Hack 2026.</span>
-          <Link to="/map" className="hover:text-ink underline underline-offset-2">Map</Link>
         </div>
       </footer>
     </div>
