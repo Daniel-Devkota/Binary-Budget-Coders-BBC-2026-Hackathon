@@ -460,8 +460,16 @@ const REQUESTS = [
   ['Teach me to make dumplings properly', 'Mine leak every single time. I have given up diagnosing it alone.', 'dumplings'],
   ['Anyone up for teaching sea kayaking?', 'Nothing on the platform for this yet — happy to travel to wherever the water is.', null],
 ]
-for (const [title, desc, slug] of REQUESTS) {
-  const requester = pick(users)
+// Home shows "Requests you could answer", matched to what you teach. Aim two of
+// these at the demo pair's teach skills so that section is never empty for them.
+const others = users.filter((u) => u.id !== maya.id && u.id !== sam.id)
+const TARGETED = [
+  ['Someone patient to walk me through a first sourdough', 'I have killed two starters. I want to stand next to a person who has actually baked one.', 'sourdough-bread'],
+  ['Guitar, absolute beginner, no theory please', 'I want to play three songs at a barbecue. Chords and rhythm, nothing else.', 'acoustic-guitar'],
+]
+
+for (const [title, desc, slug] of [...REQUESTS, ...TARGETED]) {
+  const requester = pick(slug === 'sourdough-bread' || slug === 'acoustic-guitar' ? others : users)
   w(`insert into public.skill_requests (requester_id, title, description, resolved_skill_id, status, created_at)
 values (${q(requester.id)}, ${q(title)}, ${q(desc)}, ${slug ? q(skillBySlug[slug].id) : 'null'}, ${q(slug ? 'open' : 'pending_review')}, v_now - interval '${int(2, 120)} hours');`)
 }

@@ -60,13 +60,19 @@ export async function fetchSkillBySlug(slug: string) {
 // ─── slots ──────────────────────────────────────────────────────────────────
 export async function fetchOpenSlots(opts: {
   skillId?: string
+  /** Any-of filter, for matching a whole list of skills at once. */
+  skillIds?: string[]
   categoryId?: string
   teacherId?: string
+  /** Drop a teacher's own hours — you cannot book yourself. */
+  excludeTeacherId?: string
   mode?: 'online' | 'in_person'
   from?: string
   to?: string
   limit?: number
 } = {}) {
+  if (opts.skillIds?.length === 0) return []
+
   let qb = supabase
     .from('slots_public')
     .select(SLOT_SELECT)
@@ -76,7 +82,9 @@ export async function fetchOpenSlots(opts: {
     .limit(opts.limit ?? 60)
 
   if (opts.skillId) qb = qb.eq('skill_id', opts.skillId)
+  if (opts.skillIds?.length) qb = qb.in('skill_id', opts.skillIds)
   if (opts.teacherId) qb = qb.eq('teacher_id', opts.teacherId)
+  if (opts.excludeTeacherId) qb = qb.neq('teacher_id', opts.excludeTeacherId)
   if (opts.mode) qb = qb.eq('mode', opts.mode)
   if (opts.to) qb = qb.lte('starts_at', opts.to)
 
@@ -422,14 +430,26 @@ const REQUEST_SELECT = `
   responses:request_responses(*, teacher:profiles(*))
 `
 
-export async function fetchRequests() {
-  return unwrap(
-    await supabase
-      .from('skill_requests')
-      .select(REQUEST_SELECT)
-      .in('status', ['open', 'pending_review'])
-      .order('created_at', { ascending: false }),
-  )
+export async function fetchRequests(opts: {
+  /** Any-of filter on the resolved catalog skill. */
+  skillIds?: string[]
+  /** Drop your own asks — you cannot offer to teach yourself. */
+  excludeRequesterId?: string
+  limit?: number
+} = {}) {
+  if (opts.skillIds?.length === 0) return []
+
+  let qb = supabase
+    .from('skill_requests')
+    .select(REQUEST_SELECT)
+    .in('status', ['open', 'pending_review'])
+    .order('created_at', { ascending: false })
+
+  if (opts.skillIds?.length) qb = qb.in('resolved_skill_id', opts.skillIds)
+  if (opts.excludeRequesterId) qb = qb.neq('requester_id', opts.excludeRequesterId)
+  if (opts.limit) qb = qb.limit(opts.limit)
+
+  return unwrap(await qb)
 }
 
 export async function createRequest(input: {

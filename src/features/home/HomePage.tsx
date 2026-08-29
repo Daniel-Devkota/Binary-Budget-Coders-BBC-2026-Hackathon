@@ -1,13 +1,13 @@
 import { Link } from 'react-router-dom'
 import {
   Sparkles, CalendarDays, Coins, ArrowRight, Search, Compass, TrendingUp, Inbox,
-  GraduationCap, Lightbulb, CalendarPlus, Check,
+  GraduationCap, Lightbulb, CalendarPlus, Check, HelpCircle,
 } from 'lucide-react'
 import { useAuth } from '@/stores/authStore'
 import { useAsync } from '@/lib/useAsync'
 import {
   fetchLedger, fetchMyBookings, fetchMyProposals, fetchMySlots, fetchOpenSlots,
-  fetchPerfectSwaps, fetchUserSkills,
+  fetchPerfectSwaps, fetchRequests, fetchUserSkills,
 } from '@/lib/api'
 import { Card, CardBody, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
@@ -19,6 +19,7 @@ import { PerfectSwapCard } from './PerfectSwapCard'
 import { BookingCard } from '@/features/booking/BookingCard'
 import { SlotCard } from '@/components/domain/SlotCard'
 import { SwapProposalCard } from '@/features/booking/SwapProposalCard'
+import { RequestCard, type RequestRow } from '@/features/requests/RequestCard'
 import { TOKEN_CAP } from '@/lib/constants'
 import { relative } from '@/lib/format'
 
@@ -38,9 +39,39 @@ export function HomePage() {
   const bookings = useAsync(() => (userId ? fetchMyBookings(userId) : Promise.resolve([])), [userId])
   const proposals = useAsync(() => (userId ? fetchMyProposals(userId) : Promise.resolve([])), [userId])
   const ledger = useAsync(() => (userId ? fetchLedger(userId, 6) : Promise.resolve([])), [userId])
-  const fresh = useAsync(() => fetchOpenSlots({ limit: 6 }), [])
   const mySkills = useAsync(() => (userId ? fetchUserSkills(userId) : Promise.resolve([])), [userId])
   const mySlots = useAsync(() => (userId ? fetchMySlots(userId) : Promise.resolve([])), [userId])
+
+  const wantsToLearn = (mySkills.data ?? []).filter((s) => s.kind === 'learn')
+  const learnSkillIds = wantsToLearn.map((s) => s.skill_id)
+  const learnKey = learnSkillIds.join(',')
+
+  const canTeach = (mySkills.data ?? []).filter((s) => s.kind === 'teach')
+  const teachSkillIds = canTeach.map((s) => s.skill_id)
+  const teachKey = teachSkillIds.join(',')
+
+  /** Open hours in the skills this person actually said they want to learn. */
+  const forYou = useAsync(
+    () =>
+      userId && learnSkillIds.length
+        ? fetchOpenSlots({ skillIds: learnSkillIds, excludeTeacherId: userId, limit: 8 })
+        : Promise.resolve([]),
+    [userId, learnKey],
+  )
+
+  /** Open asks in the skills this person teaches — the other half of the economy. */
+  const asks = useAsync(
+    () =>
+      userId && teachSkillIds.length
+        ? fetchRequests({ skillIds: teachSkillIds, excludeRequesterId: userId, limit: 12 })
+        : Promise.resolve([]),
+    [userId, teachKey],
+  )
+
+  // Once you have offered, the card has no action left — /requests keeps the full list.
+  const openAsks = ((asks.data ?? []) as unknown as RequestRow[]).filter(
+    (r) => !r.responses?.some((x) => x.teacher_id === userId),
+  )
 
   const upcoming = (bookings.data ?? [])
     .filter((b) => ['confirmed', 'held'].includes(b.status))
@@ -170,20 +201,76 @@ export function HomePage() {
             )}
           </section>
 
-          <section className="space-y-3">
-            <h2 className="text-xl leading-tight flex items-center gap-2">
-              <TrendingUp className="size-4 text-moss-500" aria-hidden /> Newly opened hours
-            </h2>
-            {fresh.loading ? (
-              <div className="grid sm:grid-cols-2 gap-4"><CardSkeleton /><CardSkeleton /></div>
-            ) : (
-              <div className="grid sm:grid-cols-2 gap-4">
-                {(fresh.data ?? []).slice(0, 4).map((s) => (
-                  <SlotCard key={s.id} slot={s} onChanged={() => void fresh.reload()} />
-                ))}
+          {/* Only meaningful once they have said what they want to learn — the
+              SetupCard above is already nudging everyone else. */}
+          {(mySkills.loading || wantsToLearn.length > 0) && (
+            <section className="space-y-3">
+              <div className="space-y-1">
+                <h2 className="text-xl leading-tight flex items-center gap-2">
+                  <TrendingUp className="size-4 text-moss-500" aria-hidden /> Open hours in what you
+                  want to learn
+                </h2>
+                <p className="text-sm text-ink-soft">
+                  Soonest first, across {wantsToLearn.length} skill
+                  {wantsToLearn.length === 1 ? '' : 's'} on your list.
+                </p>
               </div>
-            )}
-          </section>
+              {mySkills.loading || forYou.loading ? (
+                <div className="grid sm:grid-cols-2 gap-4"><CardSkeleton /><CardSkeleton /></div>
+              ) : forYou.data?.length ? (
+                <div className="grid sm:grid-cols-2 gap-4">
+                  {forYou.data.slice(0, 4).map((s) => (
+                    <SlotCard key={s.id} slot={s} onChanged={() => void forYou.reload()} />
+                  ))}
+                </div>
+              ) : (
+                <EmptyState
+                  icon={TrendingUp}
+                  title="Nobody has opened an hour for these yet"
+                  body="Add another skill you want to learn, or browse everything on offer right now."
+                  action={
+                    <Link to="/search"><Button variant="outline">Browse all sessions</Button></Link>
+                  }
+                />
+              )}
+            </section>
+          )}
+
+          {/* Earning half: teaching is the only way tokens come back. */}
+          {(mySkills.loading || canTeach.length > 0) && (
+            <section className="space-y-3">
+              <div className="flex items-center justify-between gap-3">
+                <h2 className="text-xl leading-tight flex items-center gap-2">
+                  <HelpCircle className="size-4 text-indigo-500" aria-hidden /> Requests you could
+                  answer
+                </h2>
+                <Link to="/requests" className="text-sm font-semibold text-indigo-500 hover:underline underline-offset-2">
+                  See all
+                </Link>
+              </div>
+              {mySkills.loading || asks.loading ? (
+                <div className="space-y-3"><CardSkeleton /><CardSkeleton /></div>
+              ) : openAsks.length ? (
+                <div className="space-y-3">
+                  {openAsks.slice(0, 3).map((r) => (
+                    <RequestCard
+                      key={r.id}
+                      request={r}
+                      userId={userId!}
+                      onChanged={() => void asks.reload()}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <EmptyState
+                  icon={HelpCircle}
+                  title="Nobody is asking for your skills right now"
+                  body="Teaching is the only way to earn a token back. Open an hour so people can book you directly."
+                  action={<Link to="/profile?tab=slots"><Button variant="outline">Open an hour</Button></Link>}
+                />
+              )}
+            </section>
+          )}
         </div>
 
         {/* ─── right column ────────────────────────────────────────────── */}
