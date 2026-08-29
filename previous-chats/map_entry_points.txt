@@ -1,0 +1,57 @@
+ ▐▛███▛█   Claude Code v2.1.251
+▝▜██████▀  Opus 5 · Claude Max
+  ▝▝ ▝▝    ~/Documents/2026-Hackathon
+
+
+❯ /clear                                                                        
+
+❯ /commit                                                                       
+
+⏺ I'll check what's staged.
+
+  Ran 2 shell commands (ctrl+o to expand)
+
+⏺ The staged change replaces the map placeholder with a real MapLibre globe plus
+  a coordinate-jittering RPC. Committing in the style of recent history:
+
+  Committed 87d2fba (ctrl+o to expand)
+
+⏺ Committed as 87d2fba — "Open the map on a real globe without leaking
+  addresses" (16 files, +1478/−49). Nothing pushed; branch main is now one
+  commit ahead of origin/main.
+
+✻ Worked for 16s · done 10:40 PM
+
+※ recap: Committed the staged map work as 87d2fba, replacing the /map placeholder with the MapLibre globe and location-jittering RPC. Nothing was pushed, so main is one commit ahead of origin; next step is pushing when you're ready. (disable recaps in /config)
+
+❯ I sthe map routewith teh gloab on the header nav or where is it accessible    
+  don't make any change w are jut discussing                                    
+
+  Searched for 3 patterns, ran 1 shell command (ctrl+o to expand)
+
+⏺ Three entry points, and notably not the desktop header nav:
+
+  - Desktop header (AppShell.tsx:17-24) — the nav array is Home, Discover,
+    Sessions, Messages, Requests, Feed. No Map. On a wide screen the globe is
+    invisible in the primary nav.
+  - Mobile drawer (AppShell.tsx:128) — { to: '/map', label: 'Map', icon: MapPin 
+    } is appended after the three /profile entries, so it's the last item in the
+    hamburger menu. Mobile-only (lg:hidden).
+  - Footer (AppShell.tsx:169) — a small underlined "Map" text link next to
+    "Built for SYNCS Hack 2026". This is the only desktop path.
+  - Direct URL /map, auth-gated by RequireAuth.
+
+  Nothing else in the app links to it — no card, button, or CTA on Home or
+  Discover. That placement is a leftover from when /map was the "coming soon"
+  placeholder, where burying it in the footer made sense. Now that it's a real
+  feature and the heaviest lazy chunk you have, a desktop user basically has to
+  find it in the footer.
+
+  Worth noting for later if you want it promoted: adding { to: '/map', label: 
+  'Map', icon: MapPin } to the nav array would put it in the header and
+  automatically in the mobile drawer (which spreads ...nav), so the explicit
+  line 128 entry would then need removing to avoid a duplicate.
+
+✻ Baked for 16s · done 10:51 PM
+
+※ recap: Committed the new /map globe feature (87d2fba, unpushed), then looked at how it's reached. Map is only in the mobile drawer and footer, not the desktop header nav. No next action pending; awaiting your call on promoting it. (disable recaps in /config)
